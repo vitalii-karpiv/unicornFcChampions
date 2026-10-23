@@ -23,3 +23,12 @@ export function checkMatchRules(i: MatchInput, now: Date): string | null {
   if (isLockedDate(i.playedAt, now)) return LOCKED_MONTH_MESSAGE;
   return null;
 }
+
+export const normalizeUsername = (s: string) => s.trim().toLowerCase();
+
+export const usernameSchema = z
+  .string()
+  .transform(normalizeUsername)
+  .pipe(z.string().regex(/^[a-z0-9_]{3,20}$/, "Username must be 3–20 characters: letters, numbers or _."));
+
+export const passwordSchema = z.string().min(8, "Password must be at least 8 characters.");
