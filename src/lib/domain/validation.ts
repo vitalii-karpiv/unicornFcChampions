@@ -32,3 +32,14 @@ export const usernameSchema = z
   .pipe(z.string().regex(/^[a-z0-9_]{3,20}$/, "Username must be 3–20 characters: letters, numbers or _."));
 
 export const passwordSchema = z.string().min(8, "Password must be at least 8 characters.");
+
+export const REACTIONS = ["🔥", "😂", "💀", "👏", "🤡"] as const;
+export type Reaction = (typeof REACTIONS)[number];
+
+export const isReaction = (s: string): s is Reaction => (REACTIONS as readonly string[]).includes(s);
+
+export const commentSchema = z
+  .string()
+  .trim()
+  .min(1, "Say something.")
+  .max(500, "Keep it under 500 characters.");

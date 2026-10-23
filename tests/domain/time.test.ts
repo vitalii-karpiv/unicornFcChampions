@@ -2,11 +2,13 @@ import { describe, expect, test } from "vitest";
 import {
   currentMonthKey,
   dayKey,
+  fromKyivLocal,
   isLockedDate,
   monthKey,
   monthStart,
   nextMonthStart,
   shiftMonth,
+  toKyivLocal,
 } from "@/lib/domain/time";
 
 describe("monthKey", () => {
@@ -61,5 +63,22 @@ describe("shiftMonth", () => {
     expect(shiftMonth("2026-01", -1)).toBe("2025-12");
     expect(shiftMonth("2026-12", 1)).toBe("2027-01");
     expect(shiftMonth("2026-05", 0)).toBe("2026-05");
+  });
+});
+
+describe("Kyiv local datetime (datetime-local inputs)", () => {
+  test("fromKyivLocal parses wall-clock time in Kyiv", () => {
+    expect(fromKyivLocal("2026-10-23T21:15").toISOString()).toBe("2026-10-23T18:15:00.000Z");
+    expect(fromKyivLocal("2026-11-02T21:15").toISOString()).toBe("2026-11-02T19:15:00.000Z");
+  });
+
+  test("toKyivLocal formats for the input and round-trips", () => {
+    const d = new Date("2026-10-23T18:15:42Z");
+    expect(toKyivLocal(d)).toBe("2026-10-23T21:15");
+    expect(fromKyivLocal(toKyivLocal(d)).toISOString()).toBe("2026-10-23T18:15:00.000Z");
+  });
+
+  test("fromKyivLocal rejects garbage", () => {
+    expect(Number.isNaN(fromKyivLocal("nope").getTime())).toBe(true);
   });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { checkMatchRules, matchInputSchema } from "@/lib/domain/validation";
+import { checkMatchRules, commentSchema, isReaction, matchInputSchema, REACTIONS } from "@/lib/domain/validation";
 
 const A = "11111111-1111-4111-8111-111111111111";
 const B = "22222222-2222-4222-8222-222222222222";
@@ -53,5 +53,20 @@ describe("matchInputSchema", () => {
 
   test("rejects non-uuid player ids", () => {
     expect(matchInputSchema.safeParse({ ...input(), playerAId: "abc" }).success).toBe(false);
+  });
+});
+
+describe("comments and reactions", () => {
+  test("comment body is trimmed, 1–500 chars", () => {
+    expect(commentSchema.parse("  gg ez  ")).toBe("gg ez");
+    expect(commentSchema.safeParse("   ").success).toBe(false);
+    expect(commentSchema.safeParse("x".repeat(501)).success).toBe(false);
+    expect(commentSchema.safeParse("x".repeat(500)).success).toBe(true);
+  });
+
+  test("only the five fixed reactions are allowed", () => {
+    expect(REACTIONS).toEqual(["🔥", "😂", "💀", "👏", "🤡"]);
+    expect(isReaction("🔥")).toBe(true);
+    expect(isReaction("👍")).toBe(false);
   });
 });

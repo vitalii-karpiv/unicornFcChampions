@@ -45,3 +45,17 @@ export function currentMonthKey(now: Date = new Date()): string {
 export function isLockedDate(playedAt: Date, now: Date): boolean {
   return playedAt.getTime() < monthStart(currentMonthKey(now)).getTime();
 }
+
+/** Parse a `datetime-local` value ("YYYY-MM-DDTHH:mm") as Kyiv wall-clock time. Invalid → Invalid Date. */
+export function fromKyivLocal(s: string): Date {
+  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(s);
+  if (!m) return new Date(Number.NaN);
+  const [, y, mo, d, h, mi] = m.map(Number);
+  return new Date(new TZDate(y, mo - 1, d, h, mi, TZ).getTime());
+}
+
+/** Format an instant as a Kyiv `datetime-local` value. */
+export function toKyivLocal(d: Date): string {
+  const k = new TZDate(d.getTime(), TZ);
+  return `${dayKey(d)}T${pad(k.getHours())}:${pad(k.getMinutes())}`;
+}
