@@ -1,3 +1,74 @@
-export default function HomePage() {
-  return <h1 className="text-xl font-semibold tracking-tight">Home</h1>;
+import Link from "next/link";
+import { AwardsTable } from "@/components/awards-table";
+import { Leaderboard } from "@/components/leaderboard";
+import { MatchCard } from "@/components/match-card";
+import { buttonVariants } from "@/components/ui/button";
+import { ensureFrozenMonths, liveAwards } from "@/lib/awards/freeze";
+import { requireUser } from "@/lib/auth/session";
+import { getFeed, getRatedMatches, getUsers } from "@/lib/data/queries";
+import { buildLeaderboard } from "@/lib/domain/leaderboard";
+import { currentMonthKey } from "@/lib/domain/time";
+import { formatMonth } from "@/lib/format";
+import { userMap } from "@/lib/users";
+
+const PAGE = 10;
+
+export default async function HomePage({ searchParams }: PageProps<"/">) {
+  const user = await requireUser();
+  const show = Math.min(Math.max(Number((await searchParams).show) || PAGE, PAGE), 500);
+  const month = currentMonthKey();
+  const [matches, users, feed, awards] = await Promise.all([
+    getRatedMatches(),
+    getUsers(),
+    getFeed(show),
+    liveAwards(month),
+    ensureFrozenMonths(),
+  ]);
+  const names = userMap(users);
+  const now = new Date();
+
+  return (
+    <div className="space-y-12">
+      <section className="space-y-3">
+        <h1 className="text-xl font-semibold tracking-tight">Leaderboard</h1>
+        <Leaderboard rows={buildLeaderboard(matches, users)} highlight={user.id} />
+      </section>
+
+      <section className="space-y-3">
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-sm font-medium text-muted-foreground">{formatMonth(month)} · live</h2>
+          <Link href="/month" className="text-sm text-muted-foreground hover:text-foreground">
+            Details →
+          </Link>
+        </div>
+        <AwardsTable awards={awards.awards} playerOfMonth={awards.playerOfMonth} users={names} live />
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-sm font-medium text-muted-foreground">Latest matches</h2>
+        {feed.items.length === 0 ? (
+          <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
+            No matches yet.{" "}
+            <Link href="/matches/new" className="text-foreground underline underline-offset-4">
+              Log the first one
+            </Link>
+            .
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {feed.items.map((f) => (
+              <MatchCard key={f.match.id} match={f.match} users={names} reactions={f.reactions} comments={f.comments} now={now} />
+            ))}
+          </div>
+        )}
+        {feed.hasMore && (
+          <div className="flex justify-center pt-2">
+            <Link href={`/?show=${show + PAGE}`} scroll={false} className={buttonVariants({ variant: "outline", size: "sm" })}>
+              Load more
+            </Link>
+          </div>
+        )}
+      </section>
+    </div>
+  );
 }

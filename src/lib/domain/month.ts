@@ -1,6 +1,6 @@
 import { playerResults } from "./results";
 import { longestStreak } from "./streaks";
-import { monthKey } from "./time";
+import { currentMonthKey, monthKey } from "./time";
 import type { AwardKey, RatedMatch } from "./types";
 
 export type PlayerMonthStats = {
@@ -54,4 +54,11 @@ export function monthStats(ms: RatedMatch[], key: string, userIds: string[]): Pl
       reachedAt,
     };
   });
+}
+
+/** Ended Kyiv months that have matches but no frozen snapshot yet, oldest first. */
+export function monthsToFreeze(matchDates: Date[], frozen: Set<string>, now: Date): string[] {
+  const current = currentMonthKey(now);
+  const keys = new Set(matchDates.map(monthKey).filter((k) => k < current && !frozen.has(k)));
+  return [...keys].sort();
 }

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { monthStats } from "@/lib/domain/month";
+import { monthStats, monthsToFreeze } from "@/lib/domain/month";
 import { replayElo } from "@/lib/domain/replay";
 import { mk } from "../helpers/fixtures";
 
@@ -47,5 +47,25 @@ describe("monthStats", () => {
       winRate: 0,
       longestWinStreak: 0,
     });
+  });
+});
+
+describe("monthsToFreeze", () => {
+  const now = new Date("2026-11-03T10:00:00Z");
+  const dates = [
+    new Date("2026-08-10T18:00:00Z"),
+    new Date("2026-09-10T18:00:00Z"),
+    new Date("2026-09-12T18:00:00Z"),
+    new Date("2026-10-31T22:30:00Z"), // 00:30 Nov 1 in Kyiv (UTC+2) → current month
+    new Date("2026-11-02T18:00:00Z"),
+  ];
+
+  test("ended months with matches and no snapshot, oldest first", () => {
+    expect(monthsToFreeze(dates, new Set(["2026-08"]), now)).toEqual(["2026-09"]);
+    expect(monthsToFreeze(dates, new Set(), now)).toEqual(["2026-08", "2026-09"]);
+  });
+
+  test("never freezes the current month", () => {
+    expect(monthsToFreeze([new Date("2026-11-02T18:00:00Z")], new Set(), now)).toEqual([]);
   });
 });
