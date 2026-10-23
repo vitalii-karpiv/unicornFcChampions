@@ -8,3 +8,5 @@ export const formatMonth = (key: string) => format(new TZDate(`${key}-15T12:00:0
 export const timeAgo = (d: Date, now = new Date()) => `${formatDistanceStrict(d, now)} ago`;
 export const elo = (n: number) => Math.round(n).toString();
 export const pct = (n: number) => `${Math.round(n * 100)}%`;
+/** Delta consistent with the rounded before → after numbers shown next to it. */
+export const displayDelta = (before: number, after: number) => Math.round(after) - Math.round(before);

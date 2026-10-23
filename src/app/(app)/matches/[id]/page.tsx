@@ -10,7 +10,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { requireUser } from "@/lib/auth/session";
 import { getComments, getMatch, getReactions, getUsers } from "@/lib/data/queries";
 import { isLockedDate } from "@/lib/domain/time";
-import { elo, formatDateTime, timeAgo } from "@/lib/format";
+import { displayDelta, elo, formatDateTime, timeAgo } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { nameOf, userMap } from "@/lib/users";
 
@@ -36,7 +36,7 @@ function Player({ username, goals, before, after, won }: {
         <span className="tabular font-mono">
           {elo(before)} → {elo(after)}
         </span>{" "}
-        <EloDelta value={after - before} />
+        <EloDelta value={displayDelta(before, after)} />
       </div>
     </div>
   );
