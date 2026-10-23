@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getActivity, getRatedMatches, getUsers } from "@/lib/data/queries";
 import { formatDateTime, timeAgo } from "@/lib/format";
 import { nameOf, type UserMap, userMap } from "@/lib/users";
+import { requireUser } from "@/lib/auth/session";
 
 export const metadata: Metadata = { title: "Activity" };
 
@@ -26,6 +27,7 @@ function change(before: Snapshot, after: Snapshot, names: UserMap): string {
 }
 
 export default async function ActivityPage() {
+  await requireUser();
   const [rows, users, matches] = await Promise.all([getActivity(100), getUsers(), getRatedMatches()]);
   const names = userMap(users);
   const existing = new Set(matches.map((m) => m.id));

@@ -5,10 +5,12 @@ import { getRatedMatches, getUsers } from "@/lib/data/queries";
 import { computeRecords, type RecordEntry } from "@/lib/domain/records";
 import { elo, formatDate } from "@/lib/format";
 import { nameOf, userMap } from "@/lib/users";
+import { requireUser } from "@/lib/auth/session";
 
 export const metadata: Metadata = { title: "Records" };
 
 export default async function RecordsPage() {
+  await requireUser();
   const [users, matches] = await Promise.all([getUsers(), getRatedMatches()]);
   const names = userMap(users);
   const r = computeRecords(matches, users.map((u) => u.id));

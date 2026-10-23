@@ -14,6 +14,7 @@ import { currentElo, peakElo, playerResults } from "@/lib/domain/results";
 import { currentStreak, lastN, longestStreak } from "@/lib/domain/streaks";
 import { elo, formatDate, formatDateTime } from "@/lib/format";
 import { userMap } from "@/lib/users";
+import { requireUser } from "@/lib/auth/session";
 
 export async function generateMetadata({ params }: PageProps<"/players/[username]">): Promise<Metadata> {
   return { title: decodeURIComponent((await params).username) };
@@ -22,6 +23,7 @@ export async function generateMetadata({ params }: PageProps<"/players/[username
 const STREAK_LABEL = { W: "wins", D: "draws", L: "losses" } as const;
 
 export default async function PlayerPage({ params }: PageProps<"/players/[username]">) {
+  await requireUser();
   const username = decodeURIComponent((await params).username).toLowerCase();
   const [users, matches] = await Promise.all([getUsers(), getRatedMatches()]);
   const player = users.find((u) => u.username === username);

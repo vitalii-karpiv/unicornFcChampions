@@ -12,12 +12,14 @@ import { currentMonthKey, shiftMonth } from "@/lib/domain/time";
 import { formatMonth, pct } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { nameOf, userMap } from "@/lib/users";
+import { requireUser } from "@/lib/auth/session";
 
 export const metadata: Metadata = { title: "Month" };
 
 const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
 
 export default async function MonthPage({ params }: PageProps<"/month/[[...month]]">) {
+  await requireUser();
   const { month: segments } = await params;
   const current = currentMonthKey();
   if (segments && (segments.length > 1 || !MONTH.test(segments[0]))) notFound();

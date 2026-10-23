@@ -3,12 +3,14 @@ import { notFound, redirect } from "next/navigation";
 import { MatchForm } from "@/components/match-form";
 import { getMatch, getUsers } from "@/lib/data/queries";
 import { isLockedDate, toKyivLocal } from "@/lib/domain/time";
+import { requireUser } from "@/lib/auth/session";
 
 export const metadata: Metadata = { title: "Edit match" };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default async function EditMatchPage({ params }: PageProps<"/matches/[id]/edit">) {
+  await requireUser();
   const { id } = await params;
   if (!UUID.test(id)) notFound();
   const [match, users] = await Promise.all([getMatch(id), getUsers()]);

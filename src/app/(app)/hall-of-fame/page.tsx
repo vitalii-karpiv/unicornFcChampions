@@ -7,10 +7,12 @@ import { getUsers } from "@/lib/data/queries";
 import { AWARDS } from "@/lib/domain/awards";
 import { formatMonth } from "@/lib/format";
 import { nameOf, userMap } from "@/lib/users";
+import { requireUser } from "@/lib/auth/session";
 
 export const metadata: Metadata = { title: "Hall of Fame" };
 
 export default async function HallOfFamePage() {
+  await requireUser();
   await ensureFrozenMonths();
   const [months, users] = await Promise.all([getFrozenMonths(), getUsers()]);
   const names = userMap(users);

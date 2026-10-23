@@ -9,6 +9,7 @@ import { headToHead } from "@/lib/domain/h2h";
 import type { RatedMatch } from "@/lib/domain/types";
 import { formatDate } from "@/lib/format";
 import { userMap } from "@/lib/users";
+import { requireUser } from "@/lib/auth/session";
 
 export const metadata: Metadata = { title: "Head-to-head" };
 
@@ -31,6 +32,7 @@ function Biggest({ label, match }: { label: string; match: RatedMatch | null }) 
 }
 
 export default async function HeadToHeadPage({ params }: PageProps<"/h2h/[a]/[b]">) {
+  await requireUser();
   const p = await params;
   const [aName, bName] = [p.a, p.b].map((s) => decodeURIComponent(s).toLowerCase());
   if (aName === bName) notFound();
