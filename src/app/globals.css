@@ -6,8 +6,10 @@
 
 @theme inline {
   --color-background: var(--background);
+  --color-win: var(--win);
+  --color-loss: var(--loss);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
+  --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -72,7 +74,9 @@
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
+  --radius: 0.5rem;
+  --win: oklch(0.6 0.15 155);
+  --loss: oklch(0.6 0.2 25);
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
@@ -84,9 +88,11 @@
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
+  --background: oklch(0.13 0 0);
   --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
+  --card: oklch(0.16 0 0);
+  --win: oklch(0.72 0.16 155);
+  --loss: oklch(0.68 0.19 25);
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
@@ -127,4 +133,8 @@
   html {
     @apply font-sans;
   }
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
 }
