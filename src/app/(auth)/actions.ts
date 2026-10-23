@@ -2,7 +2,7 @@
 
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
-import { clearFailures, isRateLimited, recordFailure } from "@/lib/auth/rate-limit";
+import { attemptLogin } from "@/lib/auth/rate-limit";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { clearSessionCookie, setSessionCookie } from "@/lib/auth/session";
 import { db } from "@/lib/db";
@@ -43,15 +43,10 @@ export async function login(_prev: AuthState, formData: FormData): Promise<AuthS
   const username = normalizeUsername(raw);
   const password = String(formData.get("password") ?? "");
 
-  if (await isRateLimited(username)) {
-    return { error: "Too many attempts, try again in 15 minutes.", username: raw };
-  }
   const [user] = await db.select().from(users).where(eq(users.username, username));
-  if (!user || !(await verifyPassword(user.passwordHash, password))) {
-    await recordFailure(username);
-    return { error: "Wrong username or password.", username: raw };
-  }
-  await clearFailures(username);
+  const result = await attemptLogin(username, async () => !!user && (await verifyPassword(user.passwordHash, password)));
+  if (result === "limited") return { error: "Too many attempts, try again in 15 minutes.", username: raw };
+  if (result === "invalid" || !user) return { error: "Wrong username or password.", username: raw };
   await setSessionCookie(user.id, user.tokenVersion);
   redirect("/");
 }
