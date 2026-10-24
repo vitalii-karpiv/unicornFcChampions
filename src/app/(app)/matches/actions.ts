@@ -1,9 +1,10 @@
 "use server";
 
 import { and, eq } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth/session";
+import { CACHE_TAGS } from "@/lib/data/queries";
 import { db } from "@/lib/db";
 import { matchComments, matchReactions } from "@/lib/db/schema";
 import { fromKyivLocal } from "@/lib/domain/time";
@@ -32,6 +33,8 @@ export async function saveMatch(_prev: FormState, formData: FormData): Promise<F
     if (e instanceof MatchRuleError) return { error: e.message };
     throw e;
   }
+  updateTag(CACHE_TAGS.matches);
+  updateTag(CACHE_TAGS.activity);
   revalidatePath("/", "layout");
   redirect(`/matches/${matchId}`);
 }
@@ -44,6 +47,8 @@ export async function removeMatch(id: string): Promise<FormState> {
     if (e instanceof MatchRuleError) return { error: e.message };
     throw e;
   }
+  // Comments and reactions cascade-delete with the match.
+  for (const tag of Object.values(CACHE_TAGS)) if (tag !== CACHE_TAGS.users) updateTag(tag);
   revalidatePath("/", "layout");
   redirect("/");
 }
@@ -53,6 +58,7 @@ export async function addComment(matchId: string, _prev: FormState, formData: Fo
   const body = commentSchema.safeParse(String(formData.get("body") ?? ""));
   if (!body.success) return { error: body.error.issues[0].message };
   await db.insert(matchComments).values({ matchId, userId: user.id, body: body.data });
+  updateTag(CACHE_TAGS.comments);
   revalidatePath(`/matches/${matchId}`);
   return {};
 }
@@ -60,6 +66,7 @@ export async function addComment(matchId: string, _prev: FormState, formData: Fo
 export async function deleteComment(commentId: string, matchId: string): Promise<void> {
   const user = await requireUser();
   await db.delete(matchComments).where(and(eq(matchComments.id, commentId), eq(matchComments.userId, user.id)));
+  updateTag(CACHE_TAGS.comments);
   revalidatePath(`/matches/${matchId}`);
 }
 
@@ -73,5 +80,6 @@ export async function toggleReaction(matchId: string, emoji: string): Promise<vo
   );
   const deleted = await db.delete(matchReactions).where(where).returning();
   if (!deleted.length) await db.insert(matchReactions).values({ matchId, userId: user.id, emoji }).onConflictDoNothing();
+  updateTag(CACHE_TAGS.reactions);
   revalidatePath(`/matches/${matchId}`);
 }

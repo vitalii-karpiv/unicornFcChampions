@@ -1,10 +1,12 @@
 "use server";
 
 import { eq } from "drizzle-orm";
+import { updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { attemptLogin } from "@/lib/auth/rate-limit";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { clearSessionCookie, setSessionCookie } from "@/lib/auth/session";
+import { CACHE_TAGS } from "@/lib/data/queries";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { normalizeUsername, passwordSchema, usernameSchema } from "@/lib/domain/validation";
@@ -34,6 +36,7 @@ export async function signup(_prev: AuthState, formData: FormData): Promise<Auth
     if (isUniqueViolation(e)) return { error: "That username is taken.", username: raw };
     throw e;
   }
+  updateTag(CACHE_TAGS.users);
   await setSessionCookie(user.id, user.tokenVersion);
   redirect("/");
 }
