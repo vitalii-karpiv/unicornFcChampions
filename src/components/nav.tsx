@@ -97,29 +97,30 @@ export function TabBar({ username }: { username: string }) {
   const items = useNavItems(username);
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/90 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
-      <div className="mx-auto grid h-16 max-w-md grid-cols-5">
-        {items.map(({ href, label, icon: Icon, primary }) => (
-          <Link
-            key={href}
-            href={href}
-            className={cn(
-              "flex flex-col items-center justify-center gap-1 text-[11px] text-muted-foreground",
-              isActive(pathname, href) && "text-foreground",
-            )}
-          >
-            {primary ? (
-              <span className="flex size-10 items-center justify-center rounded-full bg-foreground text-background">
-                <Icon className="size-5" />
-              </span>
-            ) : (
-              <>
-                <Icon className="size-5" />
-                {label}
-              </>
-            )}
-          </Link>
-        ))}
+    <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-4 pb-[max(env(safe-area-inset-bottom),0.75rem)] md:hidden">
+      <div className="pointer-events-auto mx-auto grid h-14 max-w-sm grid-cols-5 rounded-full border bg-background/50 shadow-lg backdrop-blur-xl">
+        {items.map(({ href, label, icon: Icon, primary }) => {
+          const active = isActive(pathname, href);
+          return (
+            <Link
+              key={href}
+              href={href}
+              aria-label={label}
+              className={cn(
+                "flex items-center justify-center text-muted-foreground transition-colors",
+                active && "text-foreground",
+              )}
+            >
+              {primary ? (
+                <span className="flex size-10 items-center justify-center rounded-full bg-foreground text-background">
+                  <Icon className="size-5" />
+                </span>
+              ) : (
+                <Icon className="size-6" strokeWidth={active ? 2.5 : 1.75} />
+              )}
+            </Link>
+          );
+        })}
       </div>
     </nav>
   );
