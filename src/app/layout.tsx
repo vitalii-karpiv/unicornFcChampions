@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: { default: "Unicorn FC Champions", template: "%s · Unicorn FC" },
   description: "Elo ratings, monthly awards and bragging rights for our FC matches.",
-  appleWebApp: { capable: true, title: "Unicorn FC", statusBarStyle: "default" },
+  appleWebApp: { capable: true, title: "Unicorn FC", statusBarStyle: "black-translucent" },
 };
 
 export const viewport: Viewport = {
@@ -36,6 +36,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        {/* black-translucent makes iOS draw the status text white; tint the strip behind it in light theme so it stays readable */}
+        <div className="pointer-events-none fixed inset-x-0 top-0 z-50 h-[env(safe-area-inset-top)] bg-neutral-950 dark:hidden" />
         <Providers>{children}</Providers>
         <SpeedInsights />
       </body>

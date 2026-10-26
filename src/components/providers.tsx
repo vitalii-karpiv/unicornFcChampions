@@ -7,7 +7,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
       {children}
-      <Toaster position="top-center" />
+      <Toaster position="top-center" mobileOffset={{ top: "calc(env(safe-area-inset-top) + 0.75rem)" }} />
     </ThemeProvider>
   );
 }
