@@ -6,11 +6,15 @@ import { saveMatch } from "@/app/(app)/matches/actions";
 import { Avatar } from "@/components/avatar";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { matchOdds, type PlayerRating } from "@/lib/domain/odds";
+import { cn } from "@/lib/utils";
 
 type Player = { id: string; username: string };
 
 type Props = {
   players: Player[];
+  /** Current rating by user id; omit to hide the odds (e.g. when editing a past match). */
+  ratings?: Record<string, PlayerRating>;
   initial: { id?: string; playerAId: string; playerBId: string; goalsA: number; goalsB: number; playedAt: string };
 };
 
@@ -69,12 +73,44 @@ function PlayerSelect({ name, value, onChange, players }: {
   );
 }
 
-export function MatchForm({ players, initial }: Props) {
+const signed = (n: number) => `${n < 0 ? "−" : "+"}${Math.abs(Math.round(n))}`;
+
+function OddsSide({ odds, stakes, align }: { odds: number; stakes: { win: number; loss: number }; align: "left" | "right" }) {
+  return (
+    <div className={cn("space-y-0.5", align === "right" && "text-right")}>
+      <div className="tabular font-mono text-lg font-semibold">{Math.round(odds * 100)}%</div>
+      <div className="tabular text-xs text-muted-foreground">
+        win {signed(stakes.win)} · lose {signed(stakes.loss)}
+      </div>
+    </div>
+  );
+}
+
+/** Elo-based expectation for the picked pair, shown before the score is entered. */
+function Odds({ a, b }: { a: PlayerRating; b: PlayerRating }) {
+  const odds = matchOdds(a, b);
+  const pctA = Math.round(odds.expectedA * 100);
+  return (
+    <div className="space-y-2" aria-label="Elo odds">
+      <div className="flex h-1.5 overflow-hidden rounded-full bg-muted-foreground/30">
+        <span className="bg-foreground" style={{ width: `${pctA}%` }} />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <OddsSide odds={odds.expectedA} stakes={odds.a} align="left" />
+        <OddsSide odds={odds.expectedB} stakes={odds.b} align="right" />
+      </div>
+    </div>
+  );
+}
+
+export function MatchForm({ players, initial, ratings }: Props) {
   const [state, action, pending] = useActionState(saveMatch, undefined);
   const [a, setA] = useState(initial.playerAId);
   const [b, setB] = useState(initial.playerBId);
   const [goalsA, setGoalsA] = useState(initial.goalsA);
   const [goalsB, setGoalsB] = useState(initial.goalsB);
+  const ratingA = ratings?.[a];
+  const ratingB = ratings?.[b];
 
   return (
     <form action={action} className="space-y-8">
@@ -84,6 +120,7 @@ export function MatchForm({ players, initial }: Props) {
         <span className="pt-4 text-sm text-muted-foreground">vs</span>
         <PlayerSelect name="playerBId" value={b} onChange={setB} players={players} />
       </div>
+      {a !== b && ratingA && ratingB && <Odds a={ratingA} b={ratingB} />}
       <div className="grid grid-cols-2 gap-2">
         <Stepper name="goalsA" value={goalsA} onChange={setGoalsA} />
         <Stepper name="goalsB" value={goalsB} onChange={setGoalsB} />

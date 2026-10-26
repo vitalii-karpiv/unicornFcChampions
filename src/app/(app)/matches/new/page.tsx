@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { MatchForm } from "@/components/match-form";
 import { requireUser } from "@/lib/auth/session";
 import { getRatedMatches, getUsers } from "@/lib/data/queries";
+import { buildLeaderboard } from "@/lib/domain/leaderboard";
 import { playerResults } from "@/lib/domain/results";
 import { toKyivLocal } from "@/lib/domain/time";
 
@@ -22,6 +23,9 @@ export default async function NewMatchPage() {
       ) : (
         <MatchForm
           players={users}
+          ratings={Object.fromEntries(
+            buildLeaderboard(matches, users).map((r) => [r.userId, { elo: r.elo, games: r.games }]),
+          )}
           initial={{ playerAId: user.id, playerBId: lastOpponent, goalsA: 0, goalsB: 0, playedAt: toKyivLocal(new Date()) }}
         />
       )}

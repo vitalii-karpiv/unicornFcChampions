@@ -4,7 +4,7 @@ import { Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YA
 
 type Point = { n: number; elo: number; label: string };
 
-export function EloChart({ data }: { data: Point[] }) {
+export function EloChart({ data, color = "var(--foreground)" }: { data: Point[]; color?: string }) {
   if (data.length < 2) {
     return <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">Play a match to start the chart.</div>;
   }
@@ -33,7 +33,7 @@ export function EloChart({ data }: { data: Point[] }) {
             labelFormatter={(_, payload) => payload?.[0]?.payload.label ?? ""}
             formatter={(v) => [v, "Elo"]}
           />
-          <Line type="monotone" dataKey="elo" stroke="var(--foreground)" strokeWidth={1.5} dot={false} isAnimationActive={false} />
+          <Line type="monotone" dataKey="elo" stroke={color} strokeWidth={1.5} dot={false} isAnimationActive={false} />
         </LineChart>
       </ResponsiveContainer>
     </div>

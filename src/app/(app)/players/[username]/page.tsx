@@ -8,6 +8,7 @@ import { Heatmap } from "@/components/heatmap";
 import { MatchCard } from "@/components/match-card";
 import { Stat } from "@/components/stat";
 import { getRatedMatches, getUsers } from "@/lib/data/queries";
+import { avatarColor } from "@/lib/domain/avatar-color";
 import { headToHead } from "@/lib/domain/h2h";
 import { activityByDay } from "@/lib/domain/heatmap";
 import { currentElo, peakElo, playerResults } from "@/lib/domain/results";
@@ -76,7 +77,7 @@ export default async function PlayerPage({ params }: PageProps<"/players/[userna
       <section className="space-y-3">
         <h2 className="text-sm font-medium text-muted-foreground">Elo history</h2>
         <div className="rounded-xl border p-4">
-          <EloChart data={chart} />
+          <EloChart data={chart} color={avatarColor(player.username)} />
         </div>
       </section>
 
