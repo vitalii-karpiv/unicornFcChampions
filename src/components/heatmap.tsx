@@ -72,9 +72,14 @@ export function Heatmap({ days }: { days: HeatmapDay[] }) {
         <div className="overflow-hidden">
           <div
             className={cn("grid w-max grid-flow-col grid-rows-7 gap-[3px]", columns === null && "invisible")}
-            onPointerOver={(e) => e.pointerType !== "touch" && setTip(cellAt(e))}
+            onPointerOver={(e) => {
+              // Crossing a gap between cells keeps the current tooltip instead of blinking it off.
+              const next = e.pointerType !== "touch" && cellAt(e);
+              if (next) setTip(next);
+            }}
             onPointerLeave={(e) => e.pointerType !== "touch" && setTip(null)}
-            onPointerDown={(e) => {
+            // Pointer-up, not down: a drag that turns into a page scroll fires pointercancel, never pointerup.
+            onPointerUp={(e) => {
               if (e.pointerType !== "touch") return;
               const next = cellAt(e);
               setTip((prev) => (next && prev?.i === next.i ? null : next));
