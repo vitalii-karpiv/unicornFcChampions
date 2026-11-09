@@ -20,9 +20,11 @@ export async function saveMatch(_prev: FormState, formData: FormData): Promise<F
     playerBId: formData.get("playerBId"),
     goalsA: formData.get("goalsA"),
     goalsB: formData.get("goalsB"),
+    starsA: formData.get("starsA"),
+    starsB: formData.get("starsB"),
     playedAt: fromKyivLocal(String(formData.get("playedAt") ?? "")),
   });
-  if (!parsed.success) return { error: "Check the players, score and time." };
+  if (!parsed.success) return { error: "Check the players, score, team stars and time." };
 
   const id = String(formData.get("id") ?? "");
   let matchId = id;

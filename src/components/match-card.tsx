@@ -2,6 +2,7 @@ import { MessageCircle } from "lucide-react";
 import Link from "next/link";
 import { Avatar } from "@/components/avatar";
 import { EloDelta } from "@/components/elo-delta";
+import { TeamStars } from "@/components/team-stars";
 import type { RatedMatch } from "@/lib/domain/types";
 import { timeAgo } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -15,9 +16,10 @@ type Props = {
   now: Date;
 };
 
-function Side({ username, goals, delta, won, align }: {
+function Side({ username, goals, stars, delta, won, align }: {
   username: string;
   goals: number;
+  stars: number;
   delta: number;
   won: boolean;
   align: "left" | "right";
@@ -27,7 +29,10 @@ function Side({ username, goals, delta, won, align }: {
       <Avatar username={username} size={32} />
       <div className="min-w-0">
         <div className={cn("truncate text-sm", won ? "font-semibold" : "text-muted-foreground")}>{username}</div>
-        <EloDelta value={delta} />
+        <div className={cn("flex items-center gap-1.5", align === "right" && "flex-row-reverse")}>
+          <EloDelta value={delta} />
+          <TeamStars value={stars} className="text-xs text-muted-foreground" />
+        </div>
       </div>
       <span className={cn("tabular ml-auto font-mono text-2xl font-semibold", align === "right" && "ml-0 mr-auto", !won && "text-muted-foreground")}>
         {goals}
@@ -44,9 +49,9 @@ export function MatchCard({ match: m, users, reactions = {}, comments = 0, now }
       className="block rounded-xl border bg-card p-4 transition-colors hover:border-foreground/20"
     >
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-        <Side username={nameOf(users, m.playerAId)} goals={m.goalsA} delta={m.aEloAfter - m.aEloBefore} won={m.goalsA > m.goalsB} align="left" />
+        <Side username={nameOf(users, m.playerAId)} goals={m.goalsA} stars={m.starsA} delta={m.aEloAfter - m.aEloBefore} won={m.goalsA > m.goalsB} align="left" />
         <span className="text-muted-foreground">:</span>
-        <Side username={nameOf(users, m.playerBId)} goals={m.goalsB} delta={m.bEloAfter - m.bEloBefore} won={m.goalsB > m.goalsA} align="right" />
+        <Side username={nameOf(users, m.playerBId)} goals={m.goalsB} stars={m.starsB} delta={m.bEloAfter - m.bEloBefore} won={m.goalsB > m.goalsA} align="right" />
       </div>
       <div className="mt-3 flex items-center gap-3 text-xs text-muted-foreground">
         <span>{timeAgo(m.playedAt, now)}</span>

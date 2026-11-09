@@ -4,11 +4,13 @@ import { checkMatchRules, commentSchema, isReaction, matchInputSchema, REACTIONS
 const A = "11111111-1111-4111-8111-111111111111";
 const B = "22222222-2222-4222-8222-222222222222";
 const now = new Date("2026-10-23T18:00:00Z");
-const input = (o: Partial<{ playerAId: string; playerBId: string; goalsA: number; goalsB: number; playedAt: Date }> = {}) => ({
+const input = (o: Partial<{ playerAId: string; playerBId: string; goalsA: number; goalsB: number; starsA: number; starsB: number; playedAt: Date }> = {}) => ({
   playerAId: A,
   playerBId: B,
   goalsA: 2,
   goalsB: 1,
+  starsA: 10,
+  starsB: 10,
   playedAt: new Date("2026-10-23T17:00:00Z"),
   ...o,
 });
@@ -42,7 +44,7 @@ describe("checkMatchRules", () => {
 describe("matchInputSchema", () => {
   test("coerces form strings", () => {
     const r = matchInputSchema.parse({ playerAId: A, playerBId: B, goalsA: "3", goalsB: "0", playedAt: "2026-10-23T17:00:00.000Z" });
-    expect(r).toEqual({ playerAId: A, playerBId: B, goalsA: 3, goalsB: 0, playedAt: new Date("2026-10-23T17:00:00Z") });
+    expect(r).toEqual({ playerAId: A, playerBId: B, goalsA: 3, goalsB: 0, starsA: 10, starsB: 10, playedAt: new Date("2026-10-23T17:00:00Z") });
   });
 
   test("rejects goals outside 0–99 and non-integers", () => {
@@ -68,5 +70,21 @@ describe("comments and reactions", () => {
     expect(REACTIONS).toEqual(["🔥", "😂", "💀", "👏", "🤡"]);
     expect(isReaction("🔥")).toBe(true);
     expect(isReaction("👍")).toBe(false);
+  });
+});
+
+describe("matchInputSchema stars", () => {
+  const raw = { playerAId: A, playerBId: B, goalsA: "1", goalsB: "0", playedAt: new Date("2026-10-23T17:00:00Z") };
+
+  test("parses form strings", () => {
+    expect(matchInputSchema.parse({ ...raw, starsA: "9", starsB: "12" })).toMatchObject({ starsA: 9, starsB: 12 });
+  });
+
+  test("missing fields (null from FormData) default to 5★", () => {
+    expect(matchInputSchema.parse({ ...raw, starsA: null, starsB: null })).toMatchObject({ starsA: 10, starsB: 10 });
+  });
+
+  test.each(["11", "13", "0", "9.5", "abc", ""])("rejects %s", (v) => {
+    expect(matchInputSchema.safeParse({ ...raw, starsA: v, starsB: "10" }).success).toBe(false);
   });
 });

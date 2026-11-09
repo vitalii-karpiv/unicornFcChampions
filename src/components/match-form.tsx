@@ -7,6 +7,8 @@ import { Avatar } from "@/components/avatar";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { matchOdds, type PlayerRating } from "@/lib/domain/odds";
+import { StarRow } from "@/components/team-stars";
+import { starsLabel, stepStars, STAR_VALUES } from "@/lib/domain/stars";
 import { cn } from "@/lib/utils";
 
 type Player = { id: string; username: string };
@@ -15,7 +17,16 @@ type Props = {
   players: Player[];
   /** Current rating by user id; omit to hide the odds (e.g. when editing a past match). */
   ratings?: Record<string, PlayerRating>;
-  initial: { id?: string; playerAId: string; playerBId: string; goalsA: number; goalsB: number; playedAt: string };
+  initial: {
+    id?: string;
+    playerAId: string;
+    playerBId: string;
+    goalsA: number;
+    goalsB: number;
+    starsA: number;
+    starsB: number;
+    playedAt: string;
+  };
 };
 
 function Stepper({ name, value, onChange }: { name: string; value: number; onChange: (v: number) => void }) {
@@ -37,6 +48,47 @@ function Stepper({ name, value, onChange }: { name: string; value: number; onCha
         className="flex size-11 items-center justify-center rounded-full border text-muted-foreground active:bg-muted"
       >
         <Plus className="size-4" />
+      </button>
+      <input type="hidden" name={name} value={value} />
+    </div>
+  );
+}
+
+const MIN_STARS = STAR_VALUES[0];
+const MAX_STARS = STAR_VALUES[STAR_VALUES.length - 1];
+
+/** Team star rating in half steps: 0.5 … 4.5 → 5 → 5+. */
+function StarStepper({ name, label, value, onChange }: {
+  name: string;
+  label: string;
+  value: number;
+  onChange: React.Dispatch<React.SetStateAction<number>>;
+}) {
+  const btn =
+    "flex size-9 items-center justify-center rounded-full border text-muted-foreground active:bg-muted disabled:opacity-30";
+  return (
+    <div className="flex items-center justify-center gap-1.5">
+      <button
+        type="button"
+        aria-label={`Decrease ${label} team stars`}
+        disabled={value <= MIN_STARS}
+        onClick={() => onChange((v) => stepStars(v, -1))}
+        className={btn}
+      >
+        <Minus className="size-3.5" />
+      </button>
+      <span className="flex min-w-[88px] flex-col items-center gap-1" aria-live="polite">
+        <StarRow value={value} size={15} />
+        <span className="tabular font-mono text-xs font-semibold text-muted-foreground">{starsLabel(value)}</span>
+      </span>
+      <button
+        type="button"
+        aria-label={`Increase ${label} team stars`}
+        disabled={value >= MAX_STARS}
+        onClick={() => onChange((v) => stepStars(v, 1))}
+        className={btn}
+      >
+        <Plus className="size-3.5" />
       </button>
       <input type="hidden" name={name} value={value} />
     </div>
@@ -86,9 +138,9 @@ function OddsSide({ odds, stakes, align }: { odds: number; stakes: { win: number
   );
 }
 
-/** Elo-based expectation for the picked pair, shown before the score is entered. */
-function Odds({ a, b }: { a: PlayerRating; b: PlayerRating }) {
-  const odds = matchOdds(a, b);
+/** Elo-based expectation for the picked pair and their team stars, shown before the score is entered. */
+function Odds({ a, b, starsA, starsB }: { a: PlayerRating; b: PlayerRating; starsA: number; starsB: number }) {
+  const odds = matchOdds(a, b, starsA, starsB);
   const pctA = Math.round(odds.expectedA * 100);
   return (
     <div className="space-y-2" aria-label="Elo odds">
@@ -109,6 +161,8 @@ export function MatchForm({ players, initial, ratings }: Props) {
   const [b, setB] = useState(initial.playerBId);
   const [goalsA, setGoalsA] = useState(initial.goalsA);
   const [goalsB, setGoalsB] = useState(initial.goalsB);
+  const [starsA, setStarsA] = useState(initial.starsA);
+  const [starsB, setStarsB] = useState(initial.starsB);
   const ratingA = ratings?.[a];
   const ratingB = ratings?.[b];
 
@@ -120,7 +174,11 @@ export function MatchForm({ players, initial, ratings }: Props) {
         <span className="pt-4 text-sm text-muted-foreground">vs</span>
         <PlayerSelect name="playerBId" value={b} onChange={setB} players={players} />
       </div>
-      {a !== b && ratingA && ratingB && <Odds a={ratingA} b={ratingB} />}
+      <div className="grid grid-cols-2 gap-2">
+        <StarStepper name="starsA" label="player A" value={starsA} onChange={setStarsA} />
+        <StarStepper name="starsB" label="player B" value={starsB} onChange={setStarsB} />
+      </div>
+      {a !== b && ratingA && ratingB && <Odds a={ratingA} b={ratingB} starsA={starsA} starsB={starsB} />}
       <div className="grid grid-cols-2 gap-2">
         <Stepper name="goalsA" value={goalsA} onChange={setGoalsA} />
         <Stepper name="goalsB" value={goalsB} onChange={setGoalsB} />

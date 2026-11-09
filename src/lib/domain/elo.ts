@@ -1,7 +1,16 @@
+import { DEFAULT_STARS, starWhole } from "./stars";
+
 export const START_ELO = 1000;
+/** Virtual Elo points each whole team star adds inside the expected score. */
+export const STAR_ELO = 100;
 
 export function expectedScore(ra: number, rb: number): number {
   return 1 / (1 + 10 ** ((rb - ra) / 400));
+}
+
+/** Expected score for A with each team's stars added as virtual rating; displayed ratings are never shifted. */
+export function handicappedExpected(ra: number, rb: number, starsA = DEFAULT_STARS, starsB = DEFAULT_STARS): number {
+  return expectedScore(ra + STAR_ELO * starWhole(starsA), rb + STAR_ELO * starWhole(starsB));
 }
 
 /** World Football Elo goal-difference multiplier. */
@@ -22,9 +31,12 @@ export function rateMatch(i: {
   priorB: number;
   goalsA: number;
   goalsB: number;
+  /** Team stars in half-stars; equal stars (the default) mean no handicap. */
+  starsA?: number;
+  starsB?: number;
 }): { aAfter: number; bAfter: number } {
   const sa = i.goalsA > i.goalsB ? 1 : i.goalsA === i.goalsB ? 0.5 : 0;
-  const ea = expectedScore(i.ra, i.rb);
+  const ea = handicappedExpected(i.ra, i.rb, i.starsA, i.starsB);
   const g = goalDiffMultiplier(Math.abs(i.goalsA - i.goalsB));
   return {
     aAfter: i.ra + kFactor(i.priorA) * g * (sa - ea),

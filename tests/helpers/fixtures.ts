@@ -19,6 +19,8 @@ export function mk(
     playerBId: b,
     goalsA,
     goalsB,
+    starsA: 10,
+    starsB: 10,
     playedAt,
     createdAt: playedAt,
     ...extra,

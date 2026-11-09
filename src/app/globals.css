@@ -8,6 +8,7 @@
   --color-background: var(--background);
   --color-win: var(--win);
   --color-loss: var(--loss);
+  --color-star: var(--star);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
@@ -77,6 +78,7 @@
   --radius: 0.5rem;
   --win: oklch(0.6 0.15 155);
   --loss: oklch(0.6 0.2 25);
+  --star: oklch(0.78 0.16 80);
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
@@ -93,6 +95,7 @@
   --card: oklch(0.16 0 0);
   --win: oklch(0.72 0.16 155);
   --loss: oklch(0.68 0.19 25);
+  --star: oklch(0.83 0.15 85);
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
@@ -138,3 +141,30 @@
 .tabular {
   font-variant-numeric: tabular-nums;
 }
+
+/* "What's new" story art (src/components/whats-new). Everything settles on its final frame under reduced motion. */
+@keyframes wn-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes wn-burst {
+  0% { opacity: 1; transform: translate(-50%, -50%) scale(0.6); }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))) scale(1); }
+}
+@keyframes wn-pop {
+  from { opacity: 0; transform: scale(0.7); }
+}
+@keyframes wn-slash {
+  from { opacity: 0; transform: rotate(-70deg) scale(0.6); }
+}
+@keyframes wn-rise {
+  from { opacity: 0; transform: translateY(6px); }
+}
+.wn-orbit { animation: wn-spin 18s linear infinite; }
+.wn-burst-dot { opacity: 0; transform: translate(-50%, -50%); animation: wn-burst 900ms cubic-bezier(0.2, 0.8, 0.3, 1) 250ms both; }
+.wn-pop { animation: wn-pop 600ms cubic-bezier(0.3, 1.6, 0.4, 1) both; }
+.wn-slash { animation: wn-slash 900ms cubic-bezier(0.3, 1.4, 0.4, 1) both; }
+.wn-rise { animation: wn-rise 400ms ease 600ms both; }
+@media (prefers-reduced-motion: reduce) {
+  .wn-orbit, .wn-burst-dot, .wn-pop, .wn-slash, .wn-rise { animation: none; }
+}
+

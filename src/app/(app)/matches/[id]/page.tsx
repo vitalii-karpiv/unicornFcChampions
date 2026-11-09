@@ -6,6 +6,7 @@ import { Comments } from "@/components/comments";
 import { DeleteMatchButton } from "@/components/delete-match-button";
 import { EloDelta } from "@/components/elo-delta";
 import { Reactions } from "@/components/reactions";
+import { StarRow } from "@/components/team-stars";
 import { buttonVariants } from "@/components/ui/button";
 import { requireUser } from "@/lib/auth/session";
 import { getComments, getMatch, getReactions, getUsers } from "@/lib/data/queries";
@@ -18,9 +19,10 @@ export const metadata: Metadata = { title: "Match" };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-function Player({ username, goals, before, after, won }: {
+function Player({ username, goals, stars, before, after, won }: {
   username: string;
   goals: number;
+  stars: number;
   before: number;
   after: number;
   won: boolean;
@@ -31,6 +33,10 @@ function Player({ username, goals, before, after, won }: {
       <Link href={`/players/${username}`} className={cn("text-sm", won ? "font-semibold" : "text-muted-foreground")}>
         {username}
       </Link>
+      <div className="flex flex-col items-center gap-0.5">
+        <StarRow value={stars} size={16} />
+        <span className="text-[11px] text-muted-foreground">team rating</span>
+      </div>
       <div className="tabular font-mono text-6xl font-semibold">{goals}</div>
       <div className="text-xs text-muted-foreground">
         <span className="tabular font-mono">
@@ -59,9 +65,9 @@ export default async function MatchPage({ params }: PageProps<"/matches/[id]">) 
     <div className="space-y-10">
       <section className="rounded-xl border bg-card p-6">
         <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-4">
-          <Player username={a} goals={match.goalsA} before={match.aEloBefore} after={match.aEloAfter} won={match.goalsA > match.goalsB} />
+          <Player username={a} goals={match.goalsA} stars={match.starsA} before={match.aEloBefore} after={match.aEloAfter} won={match.goalsA > match.goalsB} />
           <span className="pt-24 text-2xl text-muted-foreground">:</span>
-          <Player username={b} goals={match.goalsB} before={match.bEloBefore} after={match.bEloAfter} won={match.goalsB > match.goalsA} />
+          <Player username={b} goals={match.goalsB} stars={match.starsB} before={match.bEloBefore} after={match.bEloAfter} won={match.goalsB > match.goalsA} />
         </div>
         <div className="mt-6 flex flex-wrap items-center justify-between gap-2 border-t pt-4 text-xs text-muted-foreground">
           <span>{formatDateTime(match.playedAt)}</span>

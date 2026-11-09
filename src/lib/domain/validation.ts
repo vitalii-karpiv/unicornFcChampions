@@ -1,13 +1,21 @@
 import { z } from "zod";
+import { DEFAULT_STARS, isStars } from "./stars";
 import { isLockedDate } from "./time";
 
 const goals = z.coerce.number().int().min(0).max(99);
+// A missing field (an installed app still on the previous version) means 5★; anything off the scale is rejected.
+const stars = z.preprocess(
+  (v) => (v === null || v === undefined ? DEFAULT_STARS : v),
+  z.coerce.number().refine(isStars),
+);
 
 export const matchInputSchema = z.object({
   playerAId: z.uuid(),
   playerBId: z.uuid(),
   goalsA: goals,
   goalsB: goals,
+  starsA: stars,
+  starsB: stars,
   playedAt: z.coerce.date(),
 });
 

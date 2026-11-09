@@ -21,6 +21,8 @@ export function playerResults(ms: RatedMatch[], userId: string): PlayerResult[] 
       opponentId: isA ? m.playerBId : m.playerAId,
       goalsFor,
       goalsAgainst,
+      starsFor: isA ? m.starsA : m.starsB,
+      starsAgainst: isA ? m.starsB : m.starsA,
       outcome: outcomeOf(goalsFor, goalsAgainst),
       eloBefore,
       eloAfter,

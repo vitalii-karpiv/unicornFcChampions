@@ -2,6 +2,7 @@ import "server-only";
 import { asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { unstable_cache } from "next/cache";
 import { cache } from "react";
+import { toMatchRow } from "@/lib/data/match-row";
 import { db } from "@/lib/db";
 import { activityLog, matchComments, matches, matchReactions, users } from "@/lib/db/schema";
 import { replayElo, sortMatches } from "@/lib/domain/replay";
@@ -39,12 +40,7 @@ const cachedMatchRows = cached(() => db.select().from(matches), "matches");
 
 /** Whole history in replay order. Small enough (a few friends) to derive every stat in memory. */
 export const getRatedMatches = cache(async (): Promise<RatedMatch[]> => {
-  const rows = (await cachedMatchRows()).map((r) => ({
-    ...r,
-    playedAt: date(r.playedAt),
-    createdAt: date(r.createdAt),
-    updatedAt: date(r.updatedAt),
-  }));
+  const rows = (await cachedMatchRows()).map(toMatchRow);
   if (rows.some((r) => r.aEloAfter === null || r.bEloAfter === null)) return replayElo(rows);
   return sortMatches(rows as RatedMatch[]);
 });

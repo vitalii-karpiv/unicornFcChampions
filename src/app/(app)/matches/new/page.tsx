@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth/session";
 import { getRatedMatches, getUsers } from "@/lib/data/queries";
 import { buildLeaderboard } from "@/lib/domain/leaderboard";
 import { playerResults } from "@/lib/domain/results";
+import { DEFAULT_STARS } from "@/lib/domain/stars";
 import { toKyivLocal } from "@/lib/domain/time";
 
 export const metadata: Metadata = { title: "Log match" };
@@ -26,7 +27,15 @@ export default async function NewMatchPage() {
           ratings={Object.fromEntries(
             buildLeaderboard(matches, users).map((r) => [r.userId, { elo: r.elo, games: r.games }]),
           )}
-          initial={{ playerAId: user.id, playerBId: lastOpponent, goalsA: 0, goalsB: 0, playedAt: toKyivLocal(new Date()) }}
+          initial={{
+            playerAId: user.id,
+            playerBId: lastOpponent,
+            goalsA: 0,
+            goalsB: 0,
+            starsA: DEFAULT_STARS,
+            starsB: DEFAULT_STARS,
+            playedAt: toKyivLocal(new Date()),
+          }}
         />
       )}
     </div>

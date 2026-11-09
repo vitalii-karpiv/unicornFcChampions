@@ -20,6 +20,8 @@ export const users = pgTable("users", {
   username: text("username").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
   tokenVersion: integer("token_version").notNull().default(0),
+  /** Newest release whose "What's new" the user has closed; null = never seen one (shows every release with notes). */
+  lastSeenRelease: text("last_seen_release"),
   createdAt: createdAt(),
 });
 
@@ -31,6 +33,9 @@ export const matches = pgTable(
     playerBId: uuid("player_b_id").notNull().references(() => users.id),
     goalsA: integer("goals_a").notNull(),
     goalsB: integer("goals_b").notNull(),
+    // Team stars in half-stars: 1…10 = 0.5★…5★, 12 = 5+ (see src/lib/domain/stars.ts).
+    starsA: integer("stars_a").notNull().default(10),
+    starsB: integer("stars_b").notNull().default(10),
     playedAt: timestamp("played_at", { withTimezone: true }).notNull(),
     createdBy: uuid("created_by").notNull().references(() => users.id),
     createdAt: createdAt(),
@@ -43,6 +48,10 @@ export const matches = pgTable(
   },
   (t) => [
     check("matches_distinct_players", sql`${t.playerAId} <> ${t.playerBId}`),
+    check(
+      "matches_stars_valid",
+      sql`${t.starsA} in (1,2,3,4,5,6,7,8,9,10,12) and ${t.starsB} in (1,2,3,4,5,6,7,8,9,10,12)`,
+    ),
     index("matches_played_at_idx").on(t.playedAt),
   ],
 );

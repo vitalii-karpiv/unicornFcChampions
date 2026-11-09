@@ -8,6 +8,8 @@ export type Records = {
   longestWinStreak: RecordEntry;
   longestLossStreak: RecordEntry;
   biggestWin: RecordEntry;
+  /** Win with the largest team-star deficit; value is the deficit in half-stars. */
+  biggestGiantKilling: RecordEntry;
   highestElo: RecordEntry;
   mostGoalsInMatch: RecordEntry;
 };
@@ -35,6 +37,8 @@ export function computeRecords(ms: RatedMatch[], userIds: string[]): Records {
 
   let biggestWin: RecordEntry = null;
   let biggestWinGoals = 0;
+  let biggestGiantKilling: RecordEntry = null;
+  let giantKillingGd = 0;
   let highestElo: RecordEntry = null;
   let mostGoalsInMatch: RecordEntry = null;
 
@@ -44,6 +48,19 @@ export function computeRecords(ms: RatedMatch[], userIds: string[]): Records {
     if (gd > 0 && (!biggestWin || gd > biggestWin.value || (gd === biggestWin.value && total > biggestWinGoals))) {
       biggestWin = { userId: m.goalsA > m.goalsB ? m.playerAId : m.playerBId, value: gd, matchId: m.id, playedAt: m.playedAt };
       biggestWinGoals = total;
+    }
+    if (gd > 0) {
+      const aWon = m.goalsA > m.goalsB;
+      const deficit = aWon ? m.starsB - m.starsA : m.starsA - m.starsB;
+      if (
+        deficit > 0 &&
+        (!biggestGiantKilling ||
+          deficit > biggestGiantKilling.value ||
+          (deficit === biggestGiantKilling.value && gd > giantKillingGd))
+      ) {
+        biggestGiantKilling = { userId: aWon ? m.playerAId : m.playerBId, value: deficit, matchId: m.id, playedAt: m.playedAt };
+        giantKillingGd = gd;
+      }
     }
     for (const [userId, elo, goals] of [
       [m.playerAId, m.aEloAfter, m.goalsA],
@@ -58,6 +75,7 @@ export function computeRecords(ms: RatedMatch[], userIds: string[]): Records {
     longestWinStreak: streak("W"),
     longestLossStreak: streak("L"),
     biggestWin,
+    biggestGiantKilling,
     highestElo,
     mostGoalsInMatch,
   };

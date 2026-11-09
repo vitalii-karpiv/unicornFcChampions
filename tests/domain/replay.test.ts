@@ -1,4 +1,5 @@
 import { describe, expect, test } from "vitest";
+import { rateMatch } from "@/lib/domain/elo";
 import { replayElo, sortMatches } from "@/lib/domain/replay";
 import { mk } from "../helpers/fixtures";
 
@@ -35,5 +36,13 @@ describe("replayElo", () => {
     const z = mk("a", "b", 1, 0, t, { id: "a-z", createdAt: new Date("2026-10-05T19:05:00Z") });
     expect(sortMatches([x, y, z]).map((m) => m.id)).toEqual(["y", "a-z", "x"]);
     expect(replayElo([x, y, z])).toEqual(replayElo([z, x, y]));
+  });
+
+  test("passes each match's stars to the rating", () => {
+    const m = mk("a", "b", 1, 0, "2026-10-01T18:00:00Z", { starsA: 6, starsB: 10 });
+    const [r] = replayElo([m]);
+    const expected = rateMatch({ ra: 1000, rb: 1000, priorA: 0, priorB: 0, goalsA: 1, goalsB: 0, starsA: 6, starsB: 10 });
+    expect(r.aEloAfter).toBe(expected.aAfter);
+    expect(r.aEloAfter).toBeGreaterThan(1020);
   });
 });

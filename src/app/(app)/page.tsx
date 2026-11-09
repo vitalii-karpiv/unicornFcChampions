@@ -4,7 +4,7 @@ import { EloHistoryChart } from "@/components/elo-history-chart";
 import { Leaderboard } from "@/components/leaderboard";
 import { MatchCard } from "@/components/match-card";
 import { buttonVariants } from "@/components/ui/button";
-import { ensureFrozenMonths, liveAwards } from "@/lib/awards/freeze";
+import { ensureFrozenMonths, getFrozenMonths, liveAwards } from "@/lib/awards/freeze";
 import { requireUser } from "@/lib/auth/session";
 import { getFeed, getRatedMatches, getUsers } from "@/lib/data/queries";
 import { avatarColor } from "@/lib/domain/avatar-color";
@@ -27,6 +27,9 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
     liveAwards(month),
     ensureFrozenMonths(),
   ]);
+  // Player of the Month: this month's leader (as in the card below), else last finished month's winner.
+  const champion =
+    awards.playerOfMonth?.userId ?? (await getFrozenMonths()).find((m) => m.playerOfMonth)?.playerOfMonth?.userId;
   const names = userMap(users);
   const now = new Date();
   const board = buildLeaderboard(matches, users);
@@ -49,7 +52,7 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
     <div className="space-y-12">
       <section className="space-y-3">
         <h1 className="text-xl font-semibold tracking-tight">Leaderboard</h1>
-        <Leaderboard rows={board} highlight={user.id} />
+        <Leaderboard rows={board} highlight={user.id} champion={champion} />
       </section>
 
       <section className="space-y-3">

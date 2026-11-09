@@ -10,6 +10,7 @@ import { CACHE_TAGS } from "@/lib/data/queries";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { normalizeUsername, passwordSchema, usernameSchema } from "@/lib/domain/validation";
+import { LATEST_RELEASE } from "@/lib/releases";
 
 export type AuthState = { error?: string; username?: string } | undefined;
 
@@ -30,7 +31,8 @@ export async function signup(_prev: AuthState, formData: FormData): Promise<Auth
   try {
     [user] = await db
       .insert(users)
-      .values({ username: username.data, passwordHash: await hashPassword(password.data) })
+      // New players never knew the old version, so they start with every release note already "seen".
+      .values({ username: username.data, passwordHash: await hashPassword(password.data), lastSeenRelease: LATEST_RELEASE })
       .returning({ id: users.id, tokenVersion: users.tokenVersion });
   } catch (e) {
     if (isUniqueViolation(e)) return { error: "That username is taken.", username: raw };

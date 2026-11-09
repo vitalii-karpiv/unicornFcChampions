@@ -10,7 +10,13 @@ import { SESSION_TTL_SECONDS, signSession, verifySession } from "./jwt";
 export const SESSION_COOKIE = "session";
 const REFRESH_AFTER_SECONDS = 24 * 60 * 60;
 
-export type CurrentUser = { id: string; username: string; tokenVersion: number; needsRefresh: boolean };
+export type CurrentUser = {
+  id: string;
+  username: string;
+  tokenVersion: number;
+  lastSeenRelease: string | null;
+  needsRefresh: boolean;
+};
 
 export async function setSessionCookie(userId: string, ver: number): Promise<void> {
   const token = await signSession({ sub: userId, ver });
@@ -34,7 +40,12 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   const payload = await verifySession(token);
   if (!payload) return null;
   const [user] = await db
-    .select({ id: users.id, username: users.username, tokenVersion: users.tokenVersion })
+    .select({
+      id: users.id,
+      username: users.username,
+      tokenVersion: users.tokenVersion,
+      lastSeenRelease: users.lastSeenRelease,
+    })
     .from(users)
     .where(eq(users.id, payload.sub));
   if (!user || user.tokenVersion !== payload.ver) return null;

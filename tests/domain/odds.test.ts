@@ -30,4 +30,19 @@ describe("matchOdds", () => {
     expect(o.a.loss).toBeCloseTo(bWins.aAfter - a.elo, 10);
     expect(o.b.win).toBeCloseTo(bWins.bAfter - b.elo, 10);
   });
+
+  test("5+ vs 5★ at equal Elo is one full star = 64%", () => {
+    const o = matchOdds({ elo: 1000, games: 20 }, { elo: 1000, games: 20 }, 12, 10);
+    expect(o.expectedA).toBeCloseTo(0.6401, 4);
+  });
+
+  test("stars cancel a 200-point skill gap", () => {
+    expect(matchOdds({ elo: 1200, games: 20 }, { elo: 1000, games: 20 }, 6, 10).expectedA).toBeCloseTo(0.5, 10);
+  });
+
+  test("stakes include the star handicap", () => {
+    const o = matchOdds({ elo: 1000, games: 20 }, { elo: 1000, games: 20 }, 6, 10);
+    expect(o.a.win).toBeCloseTo(24.31, 2);
+    expect(o.b.win).toBeCloseTo(7.69, 2);
+  });
 });

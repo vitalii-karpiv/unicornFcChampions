@@ -1,25 +1,42 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getActivity, getRatedMatches, getUsers } from "@/lib/data/queries";
+import { formatStars, snapshotStars } from "@/lib/domain/stars";
 import { formatDateTime, timeAgo } from "@/lib/format";
 import { nameOf, type UserMap, userMap } from "@/lib/users";
 import { requireUser } from "@/lib/auth/session";
 
 export const metadata: Metadata = { title: "Activity" };
 
-type Snapshot = { playerAId: string; playerBId: string; goalsA: number; goalsB: number; playedAt: string };
+type Snapshot = {
+  playerAId: string;
+  playerBId: string;
+  goalsA: number;
+  goalsB: number;
+  /** Missing on rows logged before team stars existed. */
+  starsA?: number;
+  starsB?: number;
+  playedAt: string;
+};
 
 const VERB = { create: "logged", update: "edited", delete: "deleted" } as const;
 
-function describe(s: Snapshot, names: UserMap) {
-  return `${nameOf(names, s.playerAId)} ${s.goalsA}–${s.goalsB} ${nameOf(names, s.playerBId)}`;
+function describe(s: Snapshot, names: UserMap, withStars = true) {
+  const { starsA, starsB } = snapshotStars(s);
+  const a = withStars ? ` ${formatStars(starsA)}` : "";
+  const b = withStars ? `${formatStars(starsB)} ` : "";
+  return `${nameOf(names, s.playerAId)}${a} ${s.goalsA}–${s.goalsB} ${b}${nameOf(names, s.playerBId)}`;
 }
 
 function change(before: Snapshot, after: Snapshot, names: UserMap): string {
   const parts: string[] = [];
   if (before.playerAId !== after.playerAId || before.playerBId !== after.playerBId || before.goalsA !== after.goalsA || before.goalsB !== after.goalsB) {
-    parts.push(`${describe(before, names)} → ${describe(after, names)}`);
+    parts.push(`${describe(before, names, false)} → ${describe(after, names, false)}`);
   }
+  const sb = snapshotStars(before);
+  const sa = snapshotStars(after);
+  if (sb.starsA !== sa.starsA) parts.push(`${nameOf(names, after.playerAId)} ${formatStars(sb.starsA)} → ${formatStars(sa.starsA)}`);
+  if (sb.starsB !== sa.starsB) parts.push(`${nameOf(names, after.playerBId)} ${formatStars(sb.starsB)} → ${formatStars(sa.starsB)}`);
   if (before.playedAt !== after.playedAt) {
     parts.push(`time ${formatDateTime(new Date(before.playedAt))} → ${formatDateTime(new Date(after.playedAt))}`);
   }

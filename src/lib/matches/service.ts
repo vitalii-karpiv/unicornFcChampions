@@ -9,13 +9,17 @@ export class MatchRuleError extends Error {}
 
 const REPLAY_LOCK = 4242;
 
-type MatchSnapshot = Pick<MatchInput, "playerAId" | "playerBId" | "goalsA" | "goalsB"> & { playedAt: string };
+type MatchSnapshot = Pick<MatchInput, "playerAId" | "playerBId" | "goalsA" | "goalsB" | "starsA" | "starsB"> & {
+  playedAt: string;
+};
 
 const snapshot = (m: MatchInput): MatchSnapshot => ({
   playerAId: m.playerAId,
   playerBId: m.playerBId,
   goalsA: m.goalsA,
   goalsB: m.goalsB,
+  starsA: m.starsA,
+  starsB: m.starsB,
   playedAt: m.playedAt.toISOString(),
 });
 

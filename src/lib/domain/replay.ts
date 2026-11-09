@@ -21,7 +21,7 @@ export function replayElo(ms: MatchRow[]): RatedMatch[] {
     const rb = rating.get(m.playerBId) ?? START_ELO;
     const priorA = games.get(m.playerAId) ?? 0;
     const priorB = games.get(m.playerBId) ?? 0;
-    const { aAfter, bAfter } = rateMatch({ ra, rb, priorA, priorB, goalsA: m.goalsA, goalsB: m.goalsB });
+    const { aAfter, bAfter } = rateMatch({ ra, rb, priorA, priorB, goalsA: m.goalsA, goalsB: m.goalsB, starsA: m.starsA, starsB: m.starsB });
 
     rating.set(m.playerAId, aAfter);
     rating.set(m.playerBId, bAfter);

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { logout } from "@/app/(auth)/actions";
 import { ChangePasswordForm } from "@/components/change-password-form";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { WhatsNewButton } from "@/components/whats-new/whats-new-button";
 import { Button } from "@/components/ui/button";
 import { requireUser } from "@/lib/auth/session";
 import { logoutEverywhere } from "./actions";
@@ -29,6 +30,9 @@ export default async function SettingsPage() {
         <div className="flex items-center justify-between text-sm">
           Theme <ThemeToggle />
         </div>
+      </Section>
+      <Section title="What's new">
+        <WhatsNewButton />
       </Section>
       <Section title="Password">
         <ChangePasswordForm />

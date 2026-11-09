@@ -28,6 +28,8 @@ export default async function EditMatchPage({ params }: PageProps<"/matches/[id]
           playerBId: match.playerBId,
           goalsA: match.goalsA,
           goalsB: match.goalsB,
+          starsA: match.starsA,
+          starsB: match.starsB,
           playedAt: toKyivLocal(match.playedAt),
         }}
       />

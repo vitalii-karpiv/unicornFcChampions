@@ -59,4 +59,20 @@ describe("elo", () => {
       bAfter: 1020,
     });
   });
+
+  test("3★ beats 5★: underdog gains ~24.3 at K=32", () => {
+    const r = rateMatch({ ra: 1000, rb: 1000, priorA: 20, priorB: 20, goalsA: 1, goalsB: 0, starsA: 6, starsB: 10 });
+    expect(r.aAfter).toBeCloseTo(1024.31, 2);
+    expect(r.bAfter).toBeCloseTo(975.69, 2);
+  });
+
+  test("5★ beats 3★: favourite gains ~7.7", () => {
+    const r = rateMatch({ ra: 1000, rb: 1000, priorA: 20, priorB: 20, goalsA: 0, goalsB: 1, starsA: 6, starsB: 10 });
+    expect(r.bAfter).toBeCloseTo(1007.69, 2);
+  });
+
+  test("equal stars of any level change nothing vs no stars", () => {
+    const base = { ra: 1100, rb: 950, priorA: 3, priorB: 30, goalsA: 2, goalsB: 0 };
+    expect(rateMatch({ ...base, starsA: 12, starsB: 12 })).toEqual(rateMatch(base));
+  });
 });

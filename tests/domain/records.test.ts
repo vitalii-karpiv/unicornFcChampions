@@ -9,6 +9,7 @@ describe("computeRecords", () => {
       longestWinStreak: null,
       longestLossStreak: null,
       biggestWin: null,
+      biggestGiantKilling: null,
       highestElo: null,
       mostGoalsInMatch: null,
     });
@@ -42,5 +43,21 @@ describe("computeRecords", () => {
     expect(r.longestWinStreak).toBeNull();
     expect(r.biggestWin).toBeNull();
     expect(r.mostGoalsInMatch).toBeNull();
+  });
+
+  test("giant-killing: largest star deficit, then goal difference; draws and equal stars ignored", () => {
+    const ms = replayElo([
+      mk("a", "b", 1, 0, "2026-10-01T18:00:00Z", { starsA: 8, starsB: 10 }), // deficit 2
+      mk("a", "b", 2, 2, "2026-10-02T18:00:00Z", { starsA: 2, starsB: 12 }), // draw: ignored
+      mk("b", "a", 1, 0, "2026-10-03T18:00:00Z", { starsA: 6, starsB: 10 }), // b wins, deficit 4
+      mk("a", "b", 3, 0, "2026-10-04T18:00:00Z", { starsA: 6, starsB: 10 }), // deficit 4, bigger GD → wins
+      mk("a", "b", 9, 0, "2026-10-05T18:00:00Z"), // equal stars: ignored
+    ]);
+    expect(computeRecords(ms, ["a", "b"]).biggestGiantKilling).toMatchObject({ userId: "a", value: 4, matchId: ms[3].id });
+  });
+
+  test("giant-killing: a favourite's win never counts", () => {
+    const ms = replayElo([mk("a", "b", 5, 0, "2026-10-01T18:00:00Z", { starsA: 12, starsB: 2 })]);
+    expect(computeRecords(ms, ["a", "b"]).biggestGiantKilling).toBeNull();
   });
 });

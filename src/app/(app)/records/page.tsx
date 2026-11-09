@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Avatar } from "@/components/avatar";
 import { getRatedMatches, getUsers } from "@/lib/data/queries";
 import { computeRecords, type RecordEntry } from "@/lib/domain/records";
+import { TeamStars } from "@/components/team-stars";
 import { elo, formatDate } from "@/lib/format";
 import { nameOf, userMap } from "@/lib/users";
 import { requireUser } from "@/lib/auth/session";
@@ -20,9 +21,24 @@ export default async function RecordsPage() {
     return m ? `${Math.max(m.goalsA, m.goalsB)}–${Math.min(m.goalsA, m.goalsB)}` : "";
   };
 
-  const rows: { emoji: string; label: string; entry: RecordEntry; value: (e: NonNullable<RecordEntry>) => string }[] = [
+  /** "★3 vs ★5": the winner's team stars against the loser's. */
+  const starGap = (e: RecordEntry) => {
+    const m = e && byId.get(e.matchId);
+    if (!m) return "";
+    const aWon = m.goalsA > m.goalsB;
+    return (
+      <span className="inline-flex items-center gap-1.5">
+        <TeamStars value={aWon ? m.starsA : m.starsB} size={15} />
+        <span className="text-sm font-normal text-muted-foreground">vs</span>
+        <TeamStars value={aWon ? m.starsB : m.starsA} size={15} />
+      </span>
+    );
+  };
+
+  const rows: { emoji: string; label: string; entry: RecordEntry; value: (e: NonNullable<RecordEntry>) => React.ReactNode }[] = [
     { emoji: "🔥", label: "Longest win streak", entry: r.longestWinStreak, value: (e) => `${e.value} wins` },
     { emoji: "💥", label: "Biggest win", entry: r.biggestWin, value: (e) => score(e) },
+    { emoji: "🗡️", label: "Biggest giant-killing", entry: r.biggestGiantKilling, value: (e) => starGap(e) },
     { emoji: "🚀", label: "Highest Elo ever", entry: r.highestElo, value: (e) => elo(e.value) },
     { emoji: "⚽", label: "Most goals in a match", entry: r.mostGoalsInMatch, value: (e) => `${e.value} goals` },
     { emoji: "🥶", label: "Longest losing streak", entry: r.longestLossStreak, value: (e) => `${e.value} losses` },

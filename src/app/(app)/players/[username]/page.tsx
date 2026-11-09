@@ -7,11 +7,13 @@ import { FormDots } from "@/components/form-dots";
 import { Heatmap } from "@/components/heatmap";
 import { MatchCard } from "@/components/match-card";
 import { Stat } from "@/components/stat";
+import { Star } from "@/components/team-stars";
 import { getRatedMatches, getUsers } from "@/lib/data/queries";
 import { avatarColor } from "@/lib/domain/avatar-color";
 import { headToHead } from "@/lib/domain/h2h";
 import { activityByDay } from "@/lib/domain/heatmap";
 import { currentElo, peakElo, playerResults } from "@/lib/domain/results";
+import { starStats, type WDL } from "@/lib/domain/stars";
 import { currentStreak, lastN, longestStreak } from "@/lib/domain/streaks";
 import { elo, formatDate, formatDateTime } from "@/lib/format";
 import { userMap } from "@/lib/users";
@@ -22,6 +24,14 @@ export async function generateMetadata({ params }: PageProps<"/players/[username
 }
 
 const STREAK_LABEL = { W: "wins", D: "draws", L: "losses" } as const;
+
+const STRENGTH_ROWS = [
+  { key: "underdog", emoji: "🐶", label: "Underdog", hint: "weaker team" },
+  { key: "even", emoji: "⚖️", label: "Even", hint: "same stars" },
+  { key: "favourite", emoji: "👑", label: "Favourite", hint: "stronger team" },
+] as const;
+
+const wdl = (r: WDL) => (r.w + r.d + r.l === 0 ? "—" : `${r.w}-${r.d}-${r.l}`);
 
 export default async function PlayerPage({ params }: PageProps<"/players/[username]">) {
   await requireUser();
@@ -39,6 +49,7 @@ export default async function PlayerPage({ params }: PageProps<"/players/[userna
   const goalsAgainst = rs.reduce((n, r) => n + r.goalsAgainst, 0);
   const streak = currentStreak(rs);
   const best = longestStreak(rs, "W");
+  const strength = starStats(rs);
   const chart = [
     { n: 0, elo: 1000, label: "Start" },
     ...rs.map((r, i) => ({ n: i + 1, elo: Math.round(r.eloAfter), label: formatDateTime(r.playedAt) })),
@@ -87,6 +98,29 @@ export default async function PlayerPage({ params }: PageProps<"/players/[userna
           <Heatmap days={activityByDay(rs.map((r) => r.playedAt), now)} />
         </div>
       </section>
+
+      {strength.avgStars !== null && (
+        <section className="space-y-3">
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-sm font-medium text-muted-foreground">Team strength</h2>
+            <span className="tabular inline-flex items-center gap-1 font-mono text-xs text-muted-foreground">
+              avg <Star size={12} /> {strength.avgStars.toFixed(1)}
+            </span>
+          </div>
+          <div className="overflow-hidden rounded-xl border">
+            {STRENGTH_ROWS.map(({ key, emoji, label, hint }) => (
+              <div key={key} className="flex items-center gap-3 border-b px-4 py-3 last:border-b-0">
+                <span className="text-lg leading-none" aria-hidden>
+                  {emoji}
+                </span>
+                <span className="text-sm">{label}</span>
+                <span className="flex-1 text-xs text-muted-foreground">{hint}</span>
+                <span className="tabular font-mono text-xs text-muted-foreground">{wdl(strength[key])}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {rivals.length > 0 && (
         <section className="space-y-3">

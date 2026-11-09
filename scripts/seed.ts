@@ -15,6 +15,8 @@ let state = 42;
 const rand = () => ((state = (state * 1664525 + 1013904223) % 2 ** 32) / 2 ** 32);
 const pick = <T>(xs: T[]) => xs[Math.floor(rand() * xs.length)];
 const goals = () => Math.floor(rand() ** 1.6 * 6);
+// Team stars in half-stars: mostly 4–5★, now and then a 3★ side or a 5+ legend team.
+const stars = () => pick([10, 10, 10, 9, 9, 8, 12, 6]);
 
 async function main() {
   if (process.env.NODE_ENV === "production") throw new Error("Refusing to seed in production");
@@ -43,11 +45,15 @@ async function main() {
     // Evenings, spread over the last DAYS days.
     const day = Math.floor(rand() * DAYS);
     const playedAt = new Date(now - day * 86_400_000 - Math.floor(rand() * 4 * 3_600_000));
+    const starsA = stars();
+    const starsB = stars();
     return {
       playerAId: a,
       playerBId: b,
       goalsA: Math.round(goals() * skill.get(a)!),
       goalsB: Math.round(goals() * skill.get(b)!),
+      starsA,
+      starsB,
       playedAt: playedAt.getTime() > now ? new Date(now) : playedAt,
       createdBy: a,
     };

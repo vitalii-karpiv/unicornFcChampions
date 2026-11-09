@@ -4,6 +4,9 @@ export type MatchRow = {
   playerBId: string;
   goalsA: number;
   goalsB: number;
+  /** Team stars in half-stars (see stars.ts). */
+  starsA: number;
+  starsB: number;
   playedAt: Date;
   createdAt: Date;
 };
@@ -23,6 +26,9 @@ export type PlayerResult = {
   opponentId: string;
   goalsFor: number;
   goalsAgainst: number;
+  /** Team stars in half-stars, from this player's side. */
+  starsFor: number;
+  starsAgainst: number;
   outcome: Outcome;
   eloBefore: number;
   eloAfter: number;

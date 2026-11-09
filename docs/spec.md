@@ -23,7 +23,7 @@ Agreed in a design session on 2026-10-24. Anything not covered here is out of sc
 
 ## 2. Matches
 
-- 1v1 only. Fields: player A, player B (distinct users), goals A, goals B (integers 0–99), `played_at` (timestamptz, defaults to now, editable).
+- 1v1 only. Fields: player A, player B (distinct users), goals A, goals B (integers 0–99), **team stars A, team stars B** (see §3a; default 5★), `played_at` (timestamptz, defaults to now, editable).
 - Draws allowed (a match decided on penalties is entered as a draw).
 - **Anyone** logged in can create, edit or delete **any** match. Every create/update/delete writes an `activity_log` row (actor, action, before/after JSON).
 - **Locking:** a month is locked as soon as it has ended (Europe/Kyiv time), regardless of whether its awards snapshot has been written yet. Consequences:
@@ -42,8 +42,20 @@ Agreed in a design session on 2026-10-24. Anything not covered here is out of sc
   - GD ≥ 3 → (11 + GD) / 8
 - K-factor per player: **40** if that player has played fewer than 10 matches before this one, otherwise **32**.
 - Update: `R_a' = R_a + K_a · G · (S_a − E_a)` (and symmetrically for B with its own K).
+- **Team-star handicap (1.2.0):** each team adds `STAR_ELO = 100` virtual points per whole star inside the expected score only: `E_a = expectedScore(R_a + 100·stars_a, R_b + 100·stars_b)`. K and G are unchanged; equal stars mean no handicap.
 - **Full replay:** after any create/update/delete, recompute every match in order `(played_at, created_at, id)` from the 1000 baseline and write `a_elo_before/after`, `b_elo_before/after` on each match row. Runs inside one transaction guarded by `pg_advisory_xact_lock` so concurrent writes serialize.
 - A player's current Elo = `elo_after` of their latest match, else 1000.
+
+## 3a. Team stars (1.2.0)
+
+Design: `docs/superpowers/specs/2026-11-09-team-stars-design.md`.
+
+- Scale: 0.5★–5★ in half steps plus **5+** (legend teams, counts as 6★). Stored as integer half-stars `1…10` and `12`; `11` is never valid. Matches logged before 1.2.0 are 5★ v 5★.
+- Log/edit form: −/+ stepper per side, default 5★; the odds react to stars. A post without star fields counts as 5★.
+- Shown on match cards and the match page; activity log diffs show star changes.
+- Records: **Biggest giant-killing** — the win with the largest star deficit, ties → larger goal difference, then the earlier match.
+- Player page: average team stars and W-D-L as underdog / even / favourite (by stars only).
+- A one-time **"What's new" story popup** per user (`users.last_seen_release`) announces each release that has notes in `src/lib/releases.ts`; Settings can reopen it.
 
 ## 4. Ratings views
 
@@ -123,8 +135,10 @@ Computed over matches whose `played_at` falls in the Kyiv calendar month.
 ## 10. Data model
 
 ```
-users            id uuid pk, username text unique, password_hash text, token_version int default 0, created_at
+users            id uuid pk, username text unique, password_hash text, token_version int default 0,
+                 last_seen_release text null, created_at
 matches          id uuid pk, player_a_id fk users, player_b_id fk users, goals_a int, goals_b int,
+                 stars_a int default 10, stars_b int default 10 (half-stars; check in 1…10, 12),
                  played_at timestamptz, created_by fk users, created_at, updated_at,
                  a_elo_before, a_elo_after, b_elo_before, b_elo_after double precision (filled by replay)
                  check player_a_id <> player_b_id; index (played_at)
