@@ -1,4 +1,4 @@
-import type { UserSummary } from "@/lib/data/queries";
+export type UserSummary = { id: string; username: string };
 
 export type UserMap = Map<string, string>;
 

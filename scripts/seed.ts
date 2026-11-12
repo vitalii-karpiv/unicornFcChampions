@@ -2,7 +2,7 @@
 // Seeded users all have the password "password123".
 import { hashPassword } from "@/lib/auth/password";
 import { db, pool } from "@/lib/db";
-import { activityLog, loginAttempts, matchComments, matches, matchReactions, monthlyAwards, users } from "@/lib/db/schema";
+import { activityLog, bets, futuresMarkets, futuresPicks, loginAttempts, matchComments, matches, matchReactions, monthlyAwards, users } from "@/lib/db/schema";
 import { replayAll } from "@/lib/matches/service";
 
 const USERNAMES = ["vitalii", "max", "andrii", "oleh"];
@@ -21,6 +21,9 @@ const stars = () => pick([10, 10, 10, 9, 9, 8, 12, 6]);
 async function main() {
   if (process.env.NODE_ENV === "production") throw new Error("Refusing to seed in production");
 
+  await db.delete(futuresPicks);
+  await db.delete(futuresMarkets);
+  await db.delete(bets);
   await db.delete(matchReactions);
   await db.delete(matchComments);
   await db.delete(activityLog);

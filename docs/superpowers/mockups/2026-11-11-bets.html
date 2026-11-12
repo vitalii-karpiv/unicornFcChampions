@@ -1,0 +1,558 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Unicorn FC Bets</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* Tokens copied from src/app/globals.css (shadcn neutral + win/loss). */
+  :root {
+    --background: oklch(1 0 0); --foreground: oklch(0.145 0 0); --card: oklch(1 0 0); --popover: oklch(1 0 0);
+    --primary: oklch(0.205 0 0); --primary-foreground: oklch(0.985 0 0);
+    --muted: oklch(0.97 0 0); --muted-foreground: oklch(0.556 0 0);
+    --border: oklch(0.922 0 0); --input: oklch(0.922 0 0);
+    --win: oklch(0.6 0.15 155); --loss: oklch(0.6 0.2 25);
+    --r: 0.5rem; --annot: #7c3aed;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --background: oklch(0.13 0 0); --foreground: oklch(0.985 0 0); --card: oklch(0.16 0 0); --popover: oklch(0.205 0 0);
+      --primary: oklch(0.922 0 0); --primary-foreground: oklch(0.205 0 0);
+      --muted: oklch(0.269 0 0); --muted-foreground: oklch(0.708 0 0);
+      --border: oklch(1 0 0 / 10%); --input: oklch(1 0 0 / 15%);
+      --win: oklch(0.72 0.16 155); --loss: oklch(0.68 0.19 25); --annot: #a78bfa;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --background: oklch(0.13 0 0); --foreground: oklch(0.985 0 0); --card: oklch(0.16 0 0); --popover: oklch(0.205 0 0);
+    --primary: oklch(0.922 0 0); --primary-foreground: oklch(0.205 0 0);
+    --muted: oklch(0.269 0 0); --muted-foreground: oklch(0.708 0 0);
+    --border: oklch(1 0 0 / 10%); --input: oklch(1 0 0 / 15%);
+    --win: oklch(0.72 0.16 155); --loss: oklch(0.68 0.19 25); --annot: #a78bfa;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--background); color: var(--foreground);
+    font: 14px/1.45 Geist, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  button { font: inherit; color: inherit; }
+  a { color: inherit; text-decoration: none; }
+  .mono { font-family: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; }
+  .muted { color: var(--muted-foreground); }
+  .win { color: var(--win); } .loss { color: var(--loss); }
+  svg.i { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+  .av { display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; color: #fff; font-weight: 500; flex-shrink: 0; user-select: none; }
+
+  /* mockup controls (not part of the UI) */
+  .mockbar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: center; padding: 8px 16px; font-size: 12px; color: var(--annot); border-bottom: 1.5px dashed var(--annot); }
+  .mseg { display: inline-flex; border: 1.5px dashed var(--annot); border-radius: 999px; padding: 2px; }
+  .mseg button { border: 0; background: none; color: var(--annot); padding: 3px 10px; border-radius: 999px; cursor: pointer; font-size: 12px; }
+  .mseg button[aria-pressed="true"] { background: var(--annot); color: #fff; }
+  .linkbtn { border: 0; background: none; color: var(--annot); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; font-size: 12px; padding: 0; }
+  .tag { position: absolute; top: -9px; right: 10px; z-index: 2; font-size: 10.5px; font-weight: 600; letter-spacing: .02em; line-height: 16px; color: var(--annot); background: var(--background); border: 1.5px dashed var(--annot); border-radius: 999px; padding: 0 7px; white-space: nowrap; }
+  .is-new { position: relative; outline: 1.5px dashed var(--annot); outline-offset: 3px; }
+  .annot-note { border: 1.5px dashed var(--annot); border-radius: 12px; padding: 10px 12px; font-size: 12.5px; line-height: 1.5; }
+  .annot-note b { color: var(--annot); }
+  .no-annot .tag, .no-annot .annot-note { display: none; }
+  .no-annot .is-new { outline: none; }
+
+  .frame { margin: 0 auto; min-height: 100vh; }
+  body.phone .frame { max-width: 390px; box-shadow: 0 0 0 1px var(--border); }
+
+  /* header — mirrors src/components/nav.tsx */
+  .hdr { position: sticky; top: 0; z-index: 40; border-bottom: 1px solid var(--border); background: color-mix(in oklab, var(--background) 80%, transparent); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
+  .hdr-in { max-width: 768px; margin: 0 auto; height: 56px; display: flex; align-items: center; gap: 24px; padding: 0 16px; }
+  .brand { display: flex; align-items: center; gap: 8px; font-weight: 600; letter-spacing: -.01em; cursor: pointer; }
+  .brand .full { display: none; } .sm .brand .full { display: inline; }
+  .navl { display: none; flex: 1; gap: 4px; }
+  .wide .navl { display: flex; }
+  .navl a { position: relative; padding: 6px 12px; border-radius: 6px; font-size: 14px; color: var(--muted-foreground); cursor: pointer; }
+  .navl a:hover, .navl a.on { color: var(--foreground); }
+  .hdr-r { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+  .logbtn { display: none; height: 32px; align-items: center; gap: 4px; border-radius: 6px; background: var(--foreground); color: var(--background); padding: 0 12px; font-size: 14px; font-weight: 500; }
+  .wide .logbtn { display: inline-flex; }
+  .menu-trig { position: relative; display: flex; align-items: center; gap: 8px; color: var(--muted-foreground); }
+  .wide .menu-trig .mi, .wide .menu-trig .tag { display: none; }
+
+  main { max-width: 768px; margin: 0 auto; padding: 24px 16px calc(104px + env(safe-area-inset-bottom)); }
+  .wide main { padding-bottom: 48px; }
+  .stack { display: flex; flex-direction: column; gap: 40px; }
+  .sec { display: flex; flex-direction: column; gap: 12px; }
+  h1 { font-size: 20px; font-weight: 600; letter-spacing: -.01em; margin: 0; }
+  .h2 { font-size: 14px; font-weight: 500; color: var(--muted-foreground); margin: 0; }
+  .rowb { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+
+  /* tab bar — mirrors TabBar */
+  .tabbar { position: fixed; z-index: 40; left: 50%; transform: translateX(-50%); bottom: max(env(safe-area-inset-bottom), 12px); width: min(384px, calc(var(--fw, 100vw) - 32px)); }
+  .wide .tabbar { display: none; }
+  .tabbar-in { display: grid; grid-template-columns: repeat(5, 1fr); height: 56px; border-radius: 999px; border: 1px solid var(--border); background: color-mix(in oklab, var(--background) 50%, transparent); -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px); box-shadow: 0 10px 15px -3px rgb(0 0 0 / .1), 0 4px 6px -4px rgb(0 0 0 / .1); }
+  .tabbar a { position: relative; display: flex; align-items: center; justify-content: center; color: var(--muted-foreground); cursor: pointer; }
+  .tabbar a svg.i { width: 24px; height: 24px; stroke-width: 1.75; }
+  .tabbar a.on { color: var(--foreground); }
+  .tabbar a.on svg.i { stroke-width: 2.5; }
+  .tabbar .prim { width: 40px; height: 40px; border-radius: 999px; background: var(--foreground); color: var(--background); display: flex; align-items: center; justify-content: center; }
+  .tabbar .prim svg.i { width: 20px; height: 20px; stroke-width: 2; }
+  .tabbar .tag { top: -12px; right: 50%; transform: translateX(50%); }
+
+  /* surfaces */
+  .box { border: 1px solid var(--border); border-radius: 11.2px; overflow: hidden; background: var(--card); }
+  .statgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 11.2px; overflow: hidden; }
+  .stat { background: var(--background); padding: 12px 14px; min-width: 0; }
+  .stat .k { font-size: 12px; color: var(--muted-foreground); }
+  .stat .v { margin-top: 2px; font-size: 18px; font-weight: 600; letter-spacing: -.01em; white-space: nowrap; }
+  .stat .s { font-size: 11px; color: var(--muted-foreground); white-space: nowrap; }
+
+  /* tabs — shadcn Tabs */
+  .tabs { display: flex; height: 36px; padding: 3px; border-radius: 8px; background: var(--muted); }
+  .tabs button { flex: 1; border: 0; background: none; border-radius: 6px; font-size: 14px; font-weight: 500; color: var(--muted-foreground); cursor: pointer; }
+  .tabs button[aria-selected="true"] { background: var(--background); color: var(--foreground); box-shadow: 0 1px 2px rgb(0 0 0 / .08), 0 0 0 1px var(--border); }
+  .hint { font-size: 12px; color: var(--muted-foreground); margin: 0; }
+
+  /* pairing cards */
+  .pair-h { width: 100%; display: flex; align-items: center; gap: 8px; padding: 12px 16px; border: 0; background: none; cursor: pointer; text-align: left; }
+  .pair-h .who { display: flex; align-items: center; gap: 8px; min-width: 0; font-weight: 500; }
+  .pair-h .vs { color: var(--muted-foreground); font-size: 12px; font-weight: 400; }
+  .pair-h .meta { margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted-foreground); white-space: nowrap; }
+  .pair-h .chev { transition: transform .15s; }
+  .pair.open .chev { transform: rotate(180deg); }
+  .pair.locked .pair-h { cursor: default; }
+  .pair.locked .who { opacity: .5; }
+  .pair-b { display: none; border-top: 1px solid var(--border); padding: 14px 16px 16px; gap: 16px 20px; grid-template-columns: 1fr; }
+  .pair.open .pair-b { display: grid; }
+  .sm .pair-b { grid-template-columns: 1fr 1fr; }
+  .sm .mk.full { grid-column: 1 / -1; }
+  .mk-t { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--muted-foreground); margin-bottom: 6px; }
+  .odds { display: grid; gap: 6px; }
+  .odd { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; border: 1px solid var(--border); border-radius: 6.4px; background: var(--background); padding: 7px 10px; font-size: 13px; cursor: pointer; transition: background .1s; }
+  .odd:hover { background: var(--muted); }
+  .odd.v { flex-direction: column; justify-content: center; gap: 1px; padding: 6px 4px; text-align: center; }
+  .odd.v .l { max-width: 100%; font-size: 12px; }
+  .odd .l { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .odd .p { font-family: "Geist Mono", ui-monospace, monospace; font-weight: 600; }
+  .odd.sel { background: var(--foreground); color: var(--background); border-color: var(--foreground); }
+  .odd .held { width: 6px; height: 6px; border-radius: 99px; background: currentColor; opacity: .5; }
+  .more { font-size: 12px; color: var(--muted-foreground); text-decoration: underline; text-underline-offset: 3px; }
+
+  /* futures */
+  .q { border: 1px solid var(--border); border-radius: 11.2px; background: var(--card); padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+  .q-h { display: flex; align-items: center; gap: 8px; font-weight: 500; }
+  .q-h .sub { font-size: 12px; font-weight: 400; color: var(--muted-foreground); }
+  .q-h .r { margin-left: auto; font-size: 12px; font-weight: 400; color: var(--muted-foreground); white-space: nowrap; }
+  .picks { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .pick { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 4px; border: 1px solid var(--border); border-radius: 8px; background: var(--background); cursor: pointer; font-size: 12px; min-width: 0; }
+  .pick:hover { background: var(--muted); }
+  .pick .n { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pick .p { font-family: "Geist Mono", ui-monospace, monospace; font-weight: 600; font-size: 13px; }
+  .pick.sel { border-color: var(--foreground); box-shadow: inset 0 0 0 1px var(--foreground); }
+  .futhead { display: flex; flex-direction: column; gap: 10px; padding: 14px; }
+  .progress { height: 6px; border-radius: 999px; background: var(--muted); overflow: hidden; }
+  .progress i { display: block; height: 100%; background: var(--foreground); border-radius: 999px; transition: width .2s; }
+  .qgrid { display: grid; gap: 10px; }
+  .sm .qgrid { grid-template-columns: 1fr 1fr; }
+
+  /* lists */
+  .it { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-top: 1px solid var(--border); }
+  .it:first-child { border-top: 0; }
+  .it .main { min-width: 0; flex: 1; }
+  .it .t { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .it .m { font-size: 12px; color: var(--muted-foreground); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .it .rt { flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; font-size: 12px; }
+  .badge { display: inline-flex; align-items: center; height: 20px; padding: 0 8px; border-radius: 999px; font-size: 11px; font-weight: 500; border: 1px solid var(--border); white-space: nowrap; color: var(--muted-foreground); }
+  .badge.won { color: var(--win); border-color: color-mix(in oklab, var(--win) 35%, transparent); background: color-mix(in oklab, var(--win) 10%, transparent); }
+  .badge.lost { color: var(--loss); border-color: color-mix(in oklab, var(--loss) 35%, transparent); background: color-mix(in oklab, var(--loss) 10%, transparent); }
+  .badge.live { color: var(--foreground); }
+
+  /* leaderboards — mirror src/components/leaderboard.tsx */
+  .lb-h, .lb-r { display: grid; align-items: center; gap: 12px; padding: 8px 16px; }
+  .lb-h { font-size: 12px; color: var(--muted-foreground); background: color-mix(in oklab, var(--muted) 40%, transparent); border-bottom: 1px solid var(--border); }
+  .lb-r { padding: 12px 16px; border-bottom: 1px solid var(--border); }
+  .lb-r:last-child { border-bottom: 0; }
+  .elo .lb-h, .elo .lb-r { grid-template-columns: 2rem 1fr auto 4rem; }
+  .sm .elo .lb-h, .sm .elo .lb-r { grid-template-columns: 2rem 1fr 6rem 5rem 4rem; }
+  .bet .lb-h, .bet .lb-r { grid-template-columns: 2rem 1fr 4rem 5rem; }
+  .sm .bet .lb-h, .sm .bet .lb-r { grid-template-columns: 2rem 1fr 5rem 4rem 5rem; }
+  .only-sm { display: none; } .sm .only-sm { display: block; }
+  .pl { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 14px; }
+  .r { text-align: right; }
+  .dots { display: inline-flex; gap: 4px; } .dots i { width: 8px; height: 8px; border-radius: 999px; }
+  .faded { opacity: .45; }
+  .hide-xs { display: none; } .sm .hide-xs { display: inline; }
+
+  /* bet slip — bottom sheet on phone, dialog on laptop */
+  .overlay { position: fixed; inset: 0; background: rgb(0 0 0 / .5); z-index: 50; }
+  .sheet { position: fixed; z-index: 51; left: 50%; transform: translateX(-50%); bottom: 0; width: min(var(--fw, 100vw), 100vw); background: var(--background); border: 1px solid var(--border); border-bottom: 0; border-radius: 16px 16px 0 0; padding: 8px 16px calc(20px + env(safe-area-inset-bottom)); }
+  .wide .sheet { bottom: auto; top: 50%; transform: translate(-50%, -50%); width: 400px; border-radius: 12px; border-bottom: 1px solid var(--border); padding: 20px; }
+  .grab { width: 40px; height: 4px; border-radius: 9px; background: var(--muted); margin: 4px auto 12px; }
+  .wide .grab { display: none; }
+  .sl-h { display: flex; align-items: center; justify-content: space-between; }
+  .x { border: 0; background: none; color: var(--muted-foreground); cursor: pointer; padding: 4px; display: flex; }
+  .sl-pick { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin: 2px 0 16px; font-size: 17px; font-weight: 600; }
+  .lbl { font-size: 12px; font-weight: 500; margin-bottom: 6px; }
+  .input { width: 100%; height: 44px; border: 1px solid var(--input); border-radius: 8px; background: transparent; padding: 0 12px; font: 600 18px "Geist Mono", ui-monospace, monospace; color: var(--foreground); outline: none; }
+  .input:focus { box-shadow: 0 0 0 3px color-mix(in oklab, var(--foreground) 15%, transparent); }
+  .chips { display: flex; gap: 6px; margin: 8px 0 14px; }
+  .chip { border: 1px solid var(--border); background: var(--background); border-radius: 999px; padding: 4px 12px; font-size: 12px; cursor: pointer; }
+  .chip:hover { background: var(--muted); }
+  .kv { display: flex; justify-content: space-between; font-size: 14px; padding: 3px 0; }
+  .note { position: relative; margin: 12px 0 16px; padding: 10px 12px; border-radius: 8px; background: var(--muted); font-size: 12px; line-height: 1.5; color: var(--muted-foreground); }
+  .note b { color: var(--foreground); font-weight: 500; }
+  .btn { width: 100%; height: 40px; border: 0; border-radius: 8px; background: var(--primary); color: var(--primary-foreground); font-weight: 500; cursor: pointer; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+  .toast { position: fixed; z-index: 60; left: 50%; bottom: 92px; transform: translate(-50%, 16px); opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; background: var(--popover); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; font-size: 13px; box-shadow: 0 10px 30px -6px rgb(0 0 0 / .25); width: max-content; max-width: calc(min(var(--fw, 100vw), 100vw) - 32px); }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  .wide .toast { bottom: 24px; }
+</style>
+</head>
+<body class="phone">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></symbol>
+  <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></symbol>
+  <symbol id="i-coins" viewBox="0 0 24 24"><circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="m16.71 13.88.7.71-2.82 2.82"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+</svg>
+
+<div class="mockbar">
+  <span class="mseg" aria-label="Page"><button data-view="bets" aria-pressed="true">Bets page</button><button data-view="home" aria-pressed="false">Home page</button></span>
+  <span class="mseg" aria-label="Width"><button data-w="phone" aria-pressed="true">Phone</button><button data-w="laptop" aria-pressed="false">Laptop</button></span>
+  <span class="mseg" aria-label="Theme"><button data-theme-btn="auto" aria-pressed="true">Auto</button><button data-theme-btn="light" aria-pressed="false">Light</button><button data-theme-btn="dark" aria-pressed="false">Dark</button></span>
+  <button class="linkbtn" id="annot-toggle" type="button">Hide annotations</button>
+</div>
+
+<div class="frame" id="frame">
+  <header class="hdr">
+    <div class="hdr-in">
+      <a class="brand" data-go="home"><span>🦄</span><span class="full">Unicorn FC</span></a>
+      <nav class="navl" id="navl"></nav>
+      <div class="hdr-r">
+        <span class="logbtn"><svg class="i"><use href="#i-plus"/></svg> Log match</span>
+        <span class="menu-trig"><span class="tag" style="top:-4px;right:34px">Me lives here now</span><span class="av" style="width:30px;height:30px;font-size:13.5px;background:#4f7f8f">V</span><svg class="i mi"><use href="#i-menu"/></svg></span>
+      </div>
+    </div>
+  </header>
+  <main id="main"></main>
+</div>
+
+<nav class="tabbar"><div class="tabbar-in" id="tabbar"></div></nav>
+<div id="slip-root"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const ME = "vitalik";
+const COLOR = { lejuk: "#7a7f4f", mykola: "#9a6b4f", vitalik: "#4f7f8f", maks: "#8a5a7a" };
+const av = (u, s = 24) => `<span class="av" style="width:${s}px;height:${s}px;font-size:${s * 0.45}px;background:${COLOR[u]}">${u[0].toUpperCase()}</span>`;
+const ic = (id, extra = "") => `<svg class="i" ${extra}><use href="#i-${id}"/></svg>`;
+const n = (x) => Math.round(x).toLocaleString("en-US");
+const od = (o) => (o >= 10 ? o.toFixed(1) : o.toFixed(2));
+const signed = (x) => (x > 0 ? `+${n(x)}` : x < 0 ? `−${n(-x)}` : "0");
+const hhmm = (d) => d.toTimeString().slice(0, 5);
+const dmy = (d) => d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+
+// ---------- sample data (5% margin on daily markets, 0% on futures) ----------
+const PAIRS = [
+  { id: "lm", a: "lejuk", b: "mykola", h2h: "Nov 11–4", markets: [
+    { t: "Winner", cols: 3, full: true, o: [["lejuk", 1.70], ["Draw", 15.0], ["mykola", 2.55]] },
+    { t: "Total goals", cols: 2, o: [["Under 9.5", 1.90], ["Over 9.5", 1.90]] },
+    { t: "Correct score", cols: 4, o: [["5–4", 9.5], ["4–3", 11.0], ["6–4", 13.0], ["4–5", 15.0]], more: "All scores" },
+    { t: "Winning margin", cols: 3, full: true, o: [["lejuk 1–2", 3.30], ["lejuk 3–5", 5.00], ["lejuk 6+", 10.0], ["mykola 1–2", 4.50], ["mykola 3–5", 9.00], ["mykola 6+", 17.0]] },
+    { t: "lejuk goals", cols: 2, o: [["Under 5.5", 1.85], ["Over 5.5", 1.95]] },
+    { t: "mykola goals", cols: 2, o: [["Under 4.5", 1.80], ["Over 4.5", 2.00]] },
+    { t: "Specials", cols: 1, full: true, o: [["lejuk wins the next 3 in a row", 4.40], ["Someone scores 10+", 6.00]] },
+  ] },
+  { id: "mv", a: "mykola", b: "vitalik", h2h: "Nov 9–8", locked: true },
+  { id: "vl", a: "vitalik", b: "lejuk", h2h: "Nov 3–6", locked: true },
+  { id: "km", a: "maks", b: "mykola", h2h: "Nov 0–8", markets: [
+    { t: "Winner", cols: 3, full: true, o: [["maks", 9.00], ["Draw", 21.0], ["mykola", 1.12]] },
+    { t: "Total goals", cols: 2, o: [["Under 11.5", 1.90], ["Over 11.5", 1.90]] },
+    { t: "Winning margin", cols: 2, o: [["mykola 1–5", 2.40], ["mykola 6+", 1.70]] },
+    { t: "maks goals", cols: 2, o: [["Under 2.5", 1.75], ["Over 2.5", 2.05]] },
+    { t: "Specials", cols: 1, o: [["mykola scores 15+", 3.80]] },
+  ] },
+];
+const GROUP = { id: "grp", markets: [
+  { t: "Matches today", note: "7 played so far", cols: 2, o: [["Under 14.5", 1.85], ["Over 14.5", 1.95]] },
+  { t: "maks wins a game today", cols: 2, o: [["Yes", 6.50], ["No", 1.13]] },
+  { t: "Biggest winning margin today", cols: 2, o: [["Under 7.5", 1.60], ["Over 7.5", 2.45]] },
+  { t: "Anyone scores 15+ in a match", cols: 2, o: [["Yes", 3.40], ["No", 1.36]] },
+] };
+
+const QUESTIONS = [
+  { k: "potm", e: "👑", t: "Player of the Month", o: { lejuk: 2.20, vitalik: 3.50, mykola: 4.00, maks: 100 } },
+  { k: "elo", e: "📈", t: "Biggest Elo gain", o: { lejuk: 2.80, vitalik: 3.20, mykola: 3.60, maks: 20 } },
+  { k: "streak", e: "🔥", t: "Longest win streak", o: { lejuk: 2.10, vitalik: 3.80, mykola: 4.20, maks: 60 } },
+  { k: "games", e: "🎮", t: "Most games", o: { mykola: 1.65, vitalik: 3.50, lejuk: 12, maks: 40 } },
+  { k: "wins", e: "🏆", t: "Most wins", o: { lejuk: 2.50, mykola: 3.00, vitalik: 4.00, maks: 60 } },
+  { k: "rate", e: "🎯", t: "Best win rate", sub: "5+ games", o: { lejuk: 1.90, vitalik: 3.60, mykola: 5.50, maks: 50 } },
+  { k: "goals", e: "⚽", t: "Most goals", o: { mykola: 1.90, vitalik: 3.00, lejuk: 8.50, maks: 80 } },
+];
+const NOV_PICKS = [
+  { e: "👑", t: "Player of the Month", u: "lejuk", o: 2.40, st: "Leading", cls: "won" },
+  { e: "⚽", t: "Most goals", u: "vitalik", o: 2.60, st: "2nd · 197 vs 239", cls: "" },
+  { e: "🔥", t: "Longest win streak", u: "lejuk", o: 2.30, st: "Leading", cls: "won" },
+  { e: "🎮", t: "Most games", u: "vitalik", o: 3.10, st: "2nd · 37 vs 51", cls: "" },
+];
+
+const SETTLED = [
+  { pick: "Over 4.5", m: "mykola goals", where: "lejuk 5–6 mykola · yesterday 21:14", o: 2.00, s: 110, res: "won" },
+  { pick: "lejuk 3–5", m: "Winning margin", where: "lejuk 3–2 mykola · yesterday 20:47", o: 5.00, s: 100, res: "lost" },
+  { pick: "Over 7.5", m: "Biggest winning margin today", where: "Everyone · 9 Nov", o: 2.45, s: 100, res: "won" },
+  { pick: "mykola", m: "Winner", where: "maks vs lejuk didn't play within a week · 8 Nov", o: 1.12, s: 200, res: "void" },
+  { pick: "Draw", m: "Winner", where: "lejuk 6–5 mykola · 6 Nov", o: 15.0, s: 20, res: "lost" },
+];
+
+const S = {
+  view: "bets", tab: "today", open: { lm: true }, wide: false,
+  picks: { potm: "vitalik", streak: "lejuk", wins: "vitalik", goals: "mykola" },
+  balance: 990, slip: null, stake: 100, annot: true,
+  openBets: [
+    { pick: "Over 14.5", m: "Matches today", where: "Everyone", o: 1.95, s: 100, st: "7 so far" },
+    { pick: "Yes", m: "maks wins a game today", where: "Everyone", o: 6.50, s: 50, st: "waiting" },
+    { pick: "mykola", m: "Winner", where: "maks vs mykola", o: 1.12, s: 100, st: "until 17 Nov" },
+  ],
+};
+const atStake = () => S.openBets.reduce((a, b) => a + b.s, 0);
+const monthPnL = () => 340;
+
+// ---------- chrome ----------
+function renderChrome() {
+  const items = [["home", "Home"], ["month", "Month"], ["records", "Records"], ["me", "Me"], ["bets", "Bets"]];
+  document.getElementById("navl").innerHTML = items.map(([k, l]) =>
+    `<a data-go="${k}" class="${S.view === k ? "on" : ""} ${k === "bets" ? "is-new" : ""}">${l}${k === "bets" ? '<span class="tag" style="top:-14px;right:-6px">New</span>' : ""}</a>`).join("");
+  const tabs = [["home", "home"], ["month", "cal"], ["log", "plus"], ["records", "trophy"], ["bets", "coins"]];
+  document.getElementById("tabbar").innerHTML = tabs.map(([k, i]) => k === "log"
+    ? `<a aria-label="Log"><span class="prim">${ic(i)}</span></a>`
+    : `<a data-go="${k}" aria-label="${k}" class="${S.view === k ? "on" : ""}">${ic(i)}${k === "bets" ? '<span class="tag">New · replaces Me</span>' : ""}</a>`).join("");
+}
+
+// ---------- bets page ----------
+function oddBtn(key, label, o, vert) {
+  const sel = S.slip && S.slip.key === key;
+  const held = S.openBets.some((b) => b.key === key);
+  return `<button class="odd ${vert ? "v" : ""} ${sel ? "sel" : ""}" data-odd="${key}"><span class="l">${label}</span><span style="display:flex;align-items:center;gap:6px">${held ? '<span class="held" title="You have a bet here"></span>' : ""}<span class="p">${od(o)}</span></span></button>`;
+}
+function marketsHtml(id, markets) {
+  return markets.map((m, mi) => `
+    <div class="mk ${m.full ? "full" : ""}">
+      <div class="mk-t"><span>${m.t}</span>${m.note ? `<span>${m.note}</span>` : m.more ? `<span class="more">${m.more}</span>` : ""}</div>
+      <div class="odds" style="grid-template-columns:repeat(${m.cols},minmax(0,1fr))">${m.o.map(([l, o], oi) => oddBtn(`${id}|${mi}|${oi}`, l, o, m.cols >= 3)).join("")}</div>
+    </div>`).join("");
+}
+function pairCard(p) {
+  const count = p.markets ? p.markets.reduce((a, m) => a + (m.cols === 1 ? m.o.length : 1), 0) : 0;
+  const who = `<span class="who">${av(p.a, 22)}${p.a} <span class="vs">vs</span> ${p.b}${av(p.b, 22)}</span>`;
+  if (p.locked) {
+    return `<div class="box pair locked"><div class="pair-h">${who}<span class="meta">${ic("lock", 'style="width:13px;height:13px"')} You're playing</span></div></div>`;
+  }
+  const open = !!S.open[p.id];
+  return `<div class="box pair ${open ? "open" : ""}">
+    <button class="pair-h" data-toggle="${p.id}">${who}<span class="meta"><span class="hide-xs">${p.h2h} ·</span> ${count} markets ${ic("chev", 'class="i chev"')}</span></button>
+    <div class="pair-b">${marketsHtml(p.id, p.markets)}</div>
+  </div>`;
+}
+function groupCard() {
+  const open = !!S.open.grp;
+  return `<div class="box pair ${open ? "open" : ""}">
+    <button class="pair-h" data-toggle="grp"><span class="who">${ic("users")} Everyone · today</span><span class="meta">${GROUP.markets.length} markets ${ic("chev", 'class="i chev"')}</span></button>
+    <div class="pair-b">${marketsHtml("grp", GROUP.markets)}</div>
+  </div>`;
+}
+function todayTab() {
+  return `
+    <p class="hint">Wed 11 Nov · a bet counts for the first match played 10+ min after you place it. If they don't play within a week, you get your coins back.</p>
+    ${PAIRS.map(pairCard).join("")}
+    ${groupCard()}
+    <div class="annot-note"><b>Generator.</b> Every Kyiv day, one card per pairing that played in the last 30 days. Prices come from Elo and recent goals, with a 5% margin. A pairing bet stays open for a week, so it rolls over to the next session if they don't play today. Your own pairings stay visible but locked. Group markets are open to everyone, and their lines move as matches get logged (e.g. "Matches today" moves up as the day goes on).</div>`;
+}
+function futuresTab() {
+  const picked = QUESTIONS.filter((q) => S.picks[q.k]).length;
+  const potential = QUESTIONS.reduce((a, q) => a + (S.picks[q.k] ? 20 * q.o[S.picks[q.k]] : 0), 0);
+  return `
+    <div class="box futhead">
+      <div class="rowb"><div><div style="font-weight:600;font-size:16px">December picks</div><div class="hint">Free to play · a correct pick pays 20 × odds</div></div>
+        <div class="r"><div class="hint">Closes in</div><div class="mono" style="font-weight:600">19d 4h</div></div></div>
+      <div class="progress"><i style="width:${(picked / QUESTIONS.length) * 100}%"></i></div>
+      <div class="rowb hint"><span>${picked} of ${QUESTIONS.length} picked · you can change picks until 1 Dec</span><span>if all hit: <span class="mono" style="color:var(--foreground);font-weight:600">${n(potential)}</span></span></div>
+    </div>
+    <div class="qgrid">${QUESTIONS.map((q) => {
+      const sel = S.picks[q.k];
+      return `<div class="q"><div class="q-h"><span>${q.e}</span>${q.t}${q.sub ? `<span class="sub">${q.sub}</span>` : ""}<span class="r">${sel ? `pays <span class="mono" style="color:var(--foreground);font-weight:600">${n(20 * q.o[sel])}</span>` : "pick one"}</span></div>
+        <div class="picks">${Object.entries(q.o).map(([u, o]) => `<button class="pick ${sel === u ? "sel" : ""}" data-pick="${q.k}|${u}">${av(u, 26)}<span class="n">${u === ME ? "you" : u}</span><span class="p">${od(o)}</span></button>`).join("")}</div></div>`;
+    }).join("")}</div>
+    <div class="annot-note"><b>Odds.</b> Locked when October ended, calculated from all results up to then, with no margin. Picking yourself is allowed. Nothing is staked, so futures are the only way new coins come in. A correct pick pays 20 × odds, so on average about 140 coins enter per player per month (7 questions × 20). That's about what the 5% margin takes back from roughly 2,800 coins staked a month, so balances stay steady.</div>
+    <div class="sec" style="margin-top:8px">
+      <div class="rowb"><h2 class="h2">November picks · live</h2><span class="hint">pay out when November freezes</span></div>
+      <div class="box">${NOV_PICKS.map((p) => `<div class="it"><span style="font-size:16px">${p.e}</span><div class="main"><div class="t">${p.t}</div><div class="m">${p.u === ME ? "you" : p.u} <span class="mono">×${od(p.o)}</span> · pays ${n(20 * p.o)}</div></div><div class="rt"><span class="badge ${p.cls}">${p.st}</span></div></div>`).join("")}
+        <div class="it"><span class="hint">+ 3 more picks</span></div></div>
+    </div>`;
+}
+function mineTab() {
+  const won = SETTLED.filter((b) => b.res === "won").length + 12;
+  return `
+    <div class="sec">
+      <h2 class="h2">Open · ${S.openBets.length}</h2>
+      <div class="box">${S.openBets.length ? S.openBets.map((b) => `<div class="it"><div class="main"><div class="t">${b.pick}</div><div class="m">${b.m} · ${b.where} · <span class="mono">×${od(b.o)}</span></div></div><div class="rt"><span class="mono">${n(b.s)} → <b>${n(b.s * b.o)}</b></span><span class="badge live">${b.st}</span></div></div>`).join("") : '<div class="it hint">No open bets.</div>'}</div>
+    </div>
+    <div class="sec">
+      <div class="rowb"><h2 class="h2">Settled</h2><span class="hint">${won} won of ${won + 9}</span></div>
+      <div class="box">${SETTLED.map((b) => {
+        const delta = b.res === "won" ? b.s * b.o - b.s : b.res === "lost" ? -b.s : 0;
+        const label = b.res === "void" ? "Refunded" : signed(delta);
+        return `<div class="it"><div class="main"><div class="t">${b.pick} <span class="muted" style="font-weight:400">· ${b.m}</span></div><div class="m">${b.where} · <span class="mono">×${od(b.o)}</span> · stake ${n(b.s)}</div></div><div class="rt"><span class="badge ${b.res}">${label}</span></div></div>`;
+      }).join("")}</div>
+    </div>
+    <div class="annot-note"><b>Re-settling.</b> Each settled bet links to the match that decided it. If that match is edited or deleted, the bet is settled again, the same way Elo is recalculated.</div>`;
+}
+function betsPage() {
+  const body = S.tab === "today" ? todayTab() : S.tab === "futures" ? futuresTab() : mineTab();
+  return `<div class="stack" style="gap:20px">
+    <div class="rowb"><h1>Bets</h1><span class="hint">You're <b style="color:var(--foreground);font-weight:500">vitalik</b></span></div>
+    <div class="statgrid">
+      <div class="stat"><div class="k">Balance</div><div class="v mono">${n(S.balance)}</div><div class="s">all-time</div></div>
+      <div class="stat"><div class="k">At stake</div><div class="v mono">${n(atStake())}</div><div class="s">${S.openBets.length} open bets</div></div>
+      <div class="stat"><div class="k">November</div><div class="v mono win">${signed(monthPnL())}</div><div class="s">profit</div></div>
+    </div>
+    <div class="tabs" role="tablist">
+      ${[["today", "Today"], ["futures", "Futures"], ["mine", "My bets"]].map(([k, l]) => `<button role="tab" data-tab="${k}" aria-selected="${S.tab === k}">${l}</button>`).join("")}
+    </div>
+    <div class="stack" style="gap:12px">${body}</div>
+  </div>`;
+}
+
+// ---------- home page ----------
+function homePage() {
+  const dots = (s) => `<span class="dots">${[...s].map((c) => `<i style="background:${c === "W" ? "var(--win)" : c === "L" ? "var(--loss)" : "color-mix(in oklab,var(--muted-foreground) 50%,transparent)"}"></i>`).join("")}</span>`;
+  const elo = [
+    ["lejuk", "61-6-33", "WWWLW", "1,118", true], ["mykola", "74-7-80", "LWLWL", "1,061"],
+    ["vitalik", "70-8-62", "WLWWL", "1,052"], ["maks", "4-1-52", "LLLLL", "835"],
+  ];
+  const bet = [
+    ["vitalik", S.balance, 340, "14 / 23"], ["lejuk", 1085, 85, "9 / 19"], ["maks", 820, -180, "6 / 20"], ["mykola", 590, -410, "3 / 17"],
+  ].sort((a, b) => b[1] - a[1]);
+  return `<div class="stack">
+    <section class="sec"><h1>Leaderboard</h1>
+      <div class="box elo"><div class="lb-h"><span>#</span><span>Player</span><span class="only-sm">W-D-L</span><span>Form</span><span class="r">Elo</span></div>
+        ${elo.map(([u, wdl, f, e, crown], i) => `<div class="lb-r"><span class="mono muted" style="font-size:14px">${i + 1}</span><span class="pl">${av(u, 26)}<span style="${u === ME ? "font-weight:600" : ""}">${u}</span>${crown ? '<span style="font-size:13px">👑</span>' : ""}</span><span class="only-sm mono muted" style="font-size:12px">${wdl}</span>${dots(f)}<span class="r mono" style="font-weight:600">${e}</span></div>`).join("")}
+      </div></section>
+
+    <section class="sec is-new"><span class="tag" style="right:auto;left:110px">New</span>
+      <div class="rowb"><h2 class="h2">Betting rating</h2><a class="hint" data-go="bets" style="cursor:pointer">Bets →</a></div>
+      <div class="box bet"><div class="lb-h"><span>#</span><span>Player</span><span class="only-sm">Bets won</span><span class="r">Nov</span><span class="r">Balance</span></div>
+        ${bet.map(([u, b, pnl, w], i) => `<div class="lb-r"><span class="mono muted" style="font-size:14px">${i + 1}</span><span class="pl">${av(u, 26)}<span style="${u === ME ? "font-weight:600" : ""}">${u}</span></span><span class="only-sm mono muted" style="font-size:12px">${w}</span><span class="r mono ${pnl >= 0 ? "win" : "loss"}" style="font-size:13px">${signed(pnl)}</span><span class="r mono" style="font-weight:600">${n(b)}</span></div>`).join("")}
+      </div>
+      <div class="annot-note"><b>Betting rating</b> sits right under the Elo table, sorted by balance. "Nov" is this month's profit, including futures paid out on 1 Nov.</div>
+    </section>
+
+    <section class="sec faded"><h2 class="h2">Elo history</h2><div class="box" style="height:180px;display:grid;place-items:center" ><span class="hint">unchanged</span></div></section>
+    <section class="sec faded"><h2 class="h2">November 2026 · live</h2><div class="box" style="height:120px;display:grid;place-items:center"><span class="hint">unchanged</span></div></section>
+  </div>`;
+}
+
+// ---------- bet slip ----------
+function findOdd(key) {
+  const [id, mi, oi] = key.split("|");
+  const src = id === "grp" ? GROUP : PAIRS.find((p) => p.id === id);
+  const m = src.markets[+mi]; const [label, o] = m.o[+oi];
+  const where = id === "grp" ? "Everyone · today" : `${src.a} vs ${src.b}`;
+  return { key, id, where, m: m.t, label, o, src };
+}
+function renderSlip() {
+  const root = document.getElementById("slip-root");
+  if (!S.slip) { root.innerHTML = ""; return; }
+  const s = S.slip; const after = hhmm(new Date(Date.now() + 10 * 60000));
+  const pairText = s.id === "grp"
+    ? `Counts matches played after <b>${after}</b> today. Settles at midnight.`
+    : `Settles on the first <b>${s.src.a}–${s.src.b}</b> match played after <b>${after}</b>. If they don't play by <b>${dmy(new Date(Date.now() + 7 * 864e5))}</b>, you get your coins back.`;
+  root.innerHTML = `<div class="overlay" data-close></div>
+    <div class="sheet" role="dialog" aria-label="Bet slip">
+      <div class="grab"></div>
+      <div class="sl-h"><span class="hint">${s.where} · ${s.m}</span><button class="x" data-close aria-label="Close">${ic("x")}</button></div>
+      <div class="sl-pick"><span>${s.label}</span><span class="mono">×${od(s.o)}</span></div>
+      <div class="lbl">Stake</div>
+      <input class="input" id="stake" inputmode="numeric" value="${S.stake}">
+      <div class="chips">${[50, 100, 250].map((c) => `<button class="chip" data-chip="${c}">${c}</button>`).join("")}<button class="chip" data-chip="all">All in</button></div>
+      <div class="kv"><span class="muted">Returns</span><span class="mono" style="font-weight:600" id="ret"></span></div>
+      <div class="kv"><span class="muted">Balance after</span><span class="mono" id="after"></span></div>
+      <div class="note">${pairText}</div>
+      <button class="btn" id="place"></button>
+    </div>`;
+  updateSlip();
+  const inp = document.getElementById("stake");
+  inp.addEventListener("input", () => { S.stake = Math.max(0, parseInt(inp.value.replace(/\D/g, "") || "0", 10)); updateSlip(); });
+}
+function updateSlip() {
+  const s = S.slip; const ok = S.stake > 0 && S.stake <= S.balance;
+  document.getElementById("ret").textContent = `${n(S.stake * s.o)}`;
+  document.getElementById("after").textContent = `${n(S.balance - S.stake)}`;
+  const b = document.getElementById("place");
+  b.disabled = !ok;
+  b.textContent = S.stake > S.balance ? "Not enough coins" : `Place bet · ${n(S.stake)}`;
+}
+function toast(msg) {
+  const t = document.getElementById("toast"); t.innerHTML = msg; t.classList.add("show");
+  clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove("show"), 2200);
+}
+
+// ---------- render + events ----------
+function render() {
+  renderChrome();
+  document.getElementById("main").innerHTML = S.view === "home" ? homePage() : betsPage();
+  renderSlip();
+  document.querySelectorAll("[data-view]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.view === S.view));
+}
+document.addEventListener("click", (e) => {
+  const t = e.target.closest("[data-go],[data-tab],[data-toggle],[data-odd],[data-pick],[data-close],[data-chip],#place,[data-view],[data-w],[data-theme-btn]");
+  if (!t) return;
+  if (t.dataset.go) { if (t.dataset.go === "home" || t.dataset.go === "bets") { S.view = t.dataset.go; render(); window.scrollTo(0, 0); } return; }
+  if (t.dataset.view) { S.view = t.dataset.view; render(); return; }
+  if (t.dataset.tab) { S.tab = t.dataset.tab; render(); return; }
+  if (t.dataset.toggle) { S.open[t.dataset.toggle] = !S.open[t.dataset.toggle]; render(); return; }
+  if (t.dataset.odd) { S.slip = findOdd(t.dataset.odd); S.stake = Math.min(100, S.balance); render(); return; }
+  if (t.dataset.pick) { const [k, u] = t.dataset.pick.split("|"); S.picks[k] = S.picks[k] === u ? undefined : u; render(); return; }
+  if (t.hasAttribute("data-close")) { S.slip = null; render(); return; }
+  if (t.dataset.chip) { S.stake = t.dataset.chip === "all" ? S.balance : +t.dataset.chip; document.getElementById("stake").value = S.stake; updateSlip(); return; }
+  if (t.id === "place") {
+    const s = S.slip; const stake = S.stake;
+    S.openBets.unshift({ key: s.key, pick: s.label, m: s.m, where: s.where, o: s.o, s: S.stake, st: s.id === "grp" ? "today" : `until ${dmy(new Date(Date.now() + 7 * 864e5))}` });
+    S.balance -= S.stake; S.slip = null; render();
+    toast(`Bet placed · <b>${s.label}</b> <span class="mono">×${od(s.o)}</span> · ${n(s.o * stake)} if it wins`);
+    return;
+  }
+  if (t.dataset.w) {
+    document.body.classList.toggle("phone", t.dataset.w === "phone");
+    document.querySelectorAll("[data-w]").forEach((b) => b.setAttribute("aria-pressed", b === t)); return;
+  }
+  if (t.dataset.themeBtn) {
+    const v = t.dataset.themeBtn;
+    if (v === "auto") document.documentElement.removeAttribute("data-theme"); else document.documentElement.setAttribute("data-theme", v);
+    document.querySelectorAll("[data-theme-btn]").forEach((b) => b.setAttribute("aria-pressed", b === t));
+  }
+});
+document.getElementById("annot-toggle").addEventListener("click", (e) => {
+  S.annot = !S.annot; document.body.classList.toggle("no-annot", !S.annot);
+  e.target.textContent = S.annot ? "Hide annotations" : "Show annotations";
+});
+// Breakpoints follow the frame width (so the Phone/Laptop switch behaves like resizing the window).
+new ResizeObserver(([entry]) => {
+  const w = entry.contentRect.width;
+  document.body.classList.toggle("wide", w >= 768);
+  document.body.classList.toggle("sm", w >= 640);
+  document.documentElement.style.setProperty("--fw", `${w}px`);
+}).observe(document.getElementById("frame"));
+render();
+</script>
+</body>
+</html>

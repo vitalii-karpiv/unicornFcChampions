@@ -11,6 +11,7 @@
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node --env-file=.env.local node_modules/drizzle-kit/bin.cjs migrate",
+    "db:migrate:deploy": "if [ \"$VERCEL_ENV\" = production ]; then drizzle-kit migrate; else echo \"Skipping migrations: not a production build\"; fi",
     "db:seed": "tsx --env-file=.env.local scripts/seed.ts",
     "reset-password": "tsx --env-file=.env.local scripts/reset-password.ts"
   },

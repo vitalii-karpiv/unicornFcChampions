@@ -4,11 +4,14 @@ import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import { toMatchRow } from "@/lib/data/match-row";
 import { db } from "@/lib/db";
-import { activityLog, matchComments, matches, matchReactions, users } from "@/lib/db/schema";
+import type { FuturesOdds, FuturesPick } from "@/lib/domain/bets/futures";
+import type { BetRecord } from "@/lib/domain/bets/types";
+import { activityLog, bets, futuresMarkets, futuresPicks, matchComments, matches, matchReactions, users } from "@/lib/db/schema";
 import { replayElo, sortMatches } from "@/lib/domain/replay";
 import type { RatedMatch } from "@/lib/domain/types";
+import type { UserSummary } from "@/lib/users";
 
-export type UserSummary = { id: string; username: string };
+export type { UserSummary };
 
 /**
  * Cross-request cache for read queries. Every write path calls `updateTag` for the tags it touches, so these only
@@ -21,6 +24,9 @@ export const CACHE_TAGS = {
   comments: "comments",
   reactions: "reactions",
   activity: "activity",
+  bets: "bets",
+  futures: "futures",
+  picks: "picks",
 } as const;
 const TTL_SECONDS = 300;
 
@@ -141,4 +147,43 @@ const cachedActivity = cached(
 
 export async function getActivity(limit: number) {
   return (await cachedActivity(limit)).map((a) => ({ ...a, createdAt: date(a.createdAt) }));
+}
+
+const cachedBets = cached(() => db.select().from(bets).orderBy(asc(bets.placedAt)), "bets");
+
+/** A stored bet plus the market it was placed from (Kyiv day + selection key), for "already bet here" markers. */
+export type BetRow = BetRecord & { day: string; selectionKey: string };
+
+export async function getBets(): Promise<BetRow[]> {
+  return (await cachedBets()).map((b) => ({
+    ...b,
+    placedAt: date(b.placedAt),
+    cancelledAt: b.cancelledAt ? date(b.cancelledAt) : null,
+  }));
+}
+
+const cachedFuturesMarkets = cached(
+  () => db.select({ month: futuresMarkets.month, odds: futuresMarkets.odds }).from(futuresMarkets),
+  "futures",
+);
+
+export async function getFuturesMarkets(): Promise<{ month: string; odds: FuturesOdds }[]> {
+  return cachedFuturesMarkets();
+}
+
+const cachedPicks = cached(
+  () =>
+    db
+      .select({
+        month: futuresPicks.month,
+        userId: futuresPicks.userId,
+        question: futuresPicks.question,
+        pickUserId: futuresPicks.pickUserId,
+      })
+      .from(futuresPicks),
+  "picks",
+);
+
+export async function getPicks(): Promise<(FuturesPick & { month: string })[]> {
+  return (await cachedPicks()) as (FuturesPick & { month: string })[];
 }

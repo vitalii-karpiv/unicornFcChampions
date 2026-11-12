@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BettingRating } from "@/components/betting-rating";
 import { AwardsTable } from "@/components/awards-table";
 import { EloHistoryChart } from "@/components/elo-history-chart";
 import { Leaderboard } from "@/components/leaderboard";
@@ -6,10 +7,12 @@ import { MatchCard } from "@/components/match-card";
 import { buttonVariants } from "@/components/ui/button";
 import { ensureFrozenMonths, getFrozenMonths, liveAwards } from "@/lib/awards/freeze";
 import { requireUser } from "@/lib/auth/session";
+import { getWallets } from "@/lib/bets/service";
 import { getFeed, getRatedMatches, getUsers } from "@/lib/data/queries";
 import { avatarColor } from "@/lib/domain/avatar-color";
 import { eloHistoryByDay } from "@/lib/domain/elo-history";
 import { buildLeaderboard } from "@/lib/domain/leaderboard";
+import { START_COINS } from "@/lib/domain/bets/rules";
 import { currentMonthKey } from "@/lib/domain/time";
 import { formatMonth } from "@/lib/format";
 import { userMap } from "@/lib/users";
@@ -27,6 +30,19 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
     liveAwards(month),
     ensureFrozenMonths(),
   ]);
+  // Wallets need the frozen months settled first.
+  const wallets = await getWallets();
+  const betRows = users.map((u) => ({
+    userId: u.id,
+    username: u.username,
+    balance: START_COINS,
+    atStake: 0,
+    openCount: 0,
+    won: 0,
+    settled: 0,
+    monthNet: 0,
+    ...wallets.get(u.id),
+  }));
   // Player of the Month: this month's leader (as in the card below), else last finished month's winner.
   const champion =
     awards.playerOfMonth?.userId ?? (await getFrozenMonths()).find((m) => m.playerOfMonth)?.playerOfMonth?.userId;
@@ -53,6 +69,16 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
       <section className="space-y-3">
         <h1 className="text-xl font-semibold tracking-tight">Leaderboard</h1>
         <Leaderboard rows={board} highlight={user.id} champion={champion} />
+      </section>
+
+      <section className="space-y-3">
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-sm font-medium text-muted-foreground">Betting rating</h2>
+          <Link href="/bets" className="text-sm text-muted-foreground hover:text-foreground">
+            Bets →
+          </Link>
+        </div>
+        <BettingRating rows={betRows} highlight={user.id} />
       </section>
 
       <section className="space-y-3">

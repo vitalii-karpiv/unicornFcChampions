@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, Home, Menu, Plus, Trophy, User } from "lucide-react";
+import { CalendarDays, Coins, Home, Menu, Plus, Trophy } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { logout } from "@/app/(auth)/actions";
@@ -15,15 +15,25 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
-function useNavItems(username: string) {
+/** Laptop header links (Log match has its own button). */
+function headerItems(username: string) {
   return [
-    { href: "/", label: "Home", icon: Home },
-    { href: "/month", label: "Month", icon: CalendarDays },
-    { href: "/matches/new", label: "Log", icon: Plus, primary: true },
-    { href: "/records", label: "Records", icon: Trophy },
-    { href: `/players/${username}`, label: "Me", icon: User },
+    { href: "/", label: "Home" },
+    { href: "/month", label: "Month" },
+    { href: "/records", label: "Records" },
+    { href: `/players/${username}`, label: "Me" },
+    { href: "/bets", label: "Bets" },
   ];
 }
+
+/** Phone tab bar. Bets takes Me's slot; Profile stays in the avatar menu. */
+const TAB_ITEMS = [
+  { href: "/", label: "Home", icon: Home },
+  { href: "/month", label: "Month", icon: CalendarDays },
+  { href: "/matches/new", label: "Log", icon: Plus, primary: true },
+  { href: "/records", label: "Records", icon: Trophy },
+  { href: "/bets", label: "Bets", icon: Coins },
+];
 
 function isActive(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -31,7 +41,7 @@ function isActive(pathname: string, href: string) {
 
 export function Header({ username }: { username: string }) {
   const pathname = usePathname();
-  const items = useNavItems(username);
+  const items = headerItems(username);
 
   return (
     <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur">
@@ -41,20 +51,18 @@ export function Header({ username }: { username: string }) {
           <span className="hidden sm:inline">Unicorn FC</span>
         </Link>
         <nav className="hidden flex-1 items-center gap-1 md:flex">
-          {items
-            .filter((i) => !i.primary)
-            .map((i) => (
-              <Link
-                key={i.href}
-                href={i.href}
-                className={cn(
-                  "rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground",
-                  isActive(pathname, i.href) && "text-foreground",
-                )}
-              >
-                {i.label}
-              </Link>
-            ))}
+          {items.map((i) => (
+            <Link
+              key={i.href}
+              href={i.href}
+              className={cn(
+                "rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground",
+                isActive(pathname, i.href) && "text-foreground",
+              )}
+            >
+              {i.label}
+            </Link>
+          ))}
         </nav>
         <div className="ml-auto flex items-center gap-2">
           <Link
@@ -92,14 +100,13 @@ export function Header({ username }: { username: string }) {
   );
 }
 
-export function TabBar({ username }: { username: string }) {
+export function TabBar() {
   const pathname = usePathname();
-  const items = useNavItems(username);
 
   return (
     <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-4 pb-[max(env(safe-area-inset-bottom),0.75rem)] md:hidden">
       <div className="pointer-events-auto mx-auto grid h-14 max-w-sm grid-cols-5 rounded-full border bg-background/50 shadow-lg backdrop-blur-xl">
-        {items.map(({ href, label, icon: Icon, primary }) => {
+        {TAB_ITEMS.map(({ href, label, icon: Icon, primary }) => {
           const active = isActive(pathname, href);
           return (
             <Link

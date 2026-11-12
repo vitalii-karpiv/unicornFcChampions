@@ -25,9 +25,10 @@ Next.js 16 (App Router) · TypeScript · Tailwind v4 + shadcn/ui · Drizzle ORM 
 1. Push the repo to GitHub and import it in Vercel.
 2. In the Vercel project → **Storage** → add **Neon Postgres** (Marketplace). It sets `DATABASE_URL` for you.
 3. Add `AUTH_SECRET` in **Settings → Environment Variables**.
-4. Run migrations against the production database once (and after every schema change):
-   `DATABASE_URL=<prod url> npx drizzle-kit migrate`
-5. Deploy. Everyone signs up at `/signup`.
+4. Deploy. Production builds apply pending migrations before `next build` (`vercel.json` → `npm run db:migrate:deploy`,
+   which only runs when `VERCEL_ENV=production`; preview builds skip it). A failed migration fails the build.
+   To migrate by hand instead: `DATABASE_URL=<prod url> npx drizzle-kit migrate`.
+5. Everyone signs up at `/signup`.
 
 ## Scripts
 
@@ -38,6 +39,7 @@ Next.js 16 (App Router) · TypeScript · Tailwind v4 + shadcn/ui · Drizzle ORM 
 | `npm run lint` / `npm run build` | Lint / production build |
 | `npm run db:generate` | Generate a migration after editing `src/lib/db/schema.ts` |
 | `npm run db:migrate` | Apply migrations (uses `.env.local`) |
+| `npm run db:migrate:deploy` | Apply migrations on a Vercel production build only (run by `vercel.json`) |
 | `npm run db:seed` | Wipe and seed fake data (refuses in production) |
 | `npm run reset-password <username>` | Set a random password, sign the user out everywhere, print it |
 

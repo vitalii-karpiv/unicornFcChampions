@@ -13,3 +13,7 @@ export const elo = (n: number) => Math.round(n).toString();
 export const pct = (n: number) => `${Math.round(n * 100)}%`;
 /** Delta consistent with the rounded before → after numbers shown next to it. */
 export const displayDelta = (before: number, after: number) => Math.round(after) - Math.round(before);
+/** Decimal odds: "×1.70", or one decimal from 10 up ("×15.0"). */
+export const formatOdds = (o: number) => `×${o >= 10 ? o.toFixed(1) : o.toFixed(2)}`;
+export const coins = (n: number) => n.toLocaleString("en-US");
+export const signedCoins = (n: number) => (n > 0 ? `+${coins(n)}` : n < 0 ? `−${coins(-n)}` : "0");

@@ -22,6 +22,20 @@
       "when": 1794259090597,
       "tag": "0002_old_the_professor",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1794430083303,
+      "tag": "0003_eager_cammi",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794480764271,
+      "tag": "0004_sturdy_captain_marvel",
+      "breakpoints": true
     }
   ]
 }

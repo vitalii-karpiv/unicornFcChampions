@@ -59,3 +59,15 @@ export function toKyivLocal(d: Date): string {
   const k = new TZDate(d.getTime(), TZ);
   return `${dayKey(d)}T${pad(k.getHours())}:${pad(k.getMinutes())}`;
 }
+
+/** UTC instant of Kyiv midnight starting the given "YYYY-MM-DD" day. */
+export function dayStart(day: string): Date {
+  const [year, month, date] = day.split("-").map(Number);
+  return new Date(new TZDate(year, month - 1, date, TZ).getTime());
+}
+
+/** UTC instant of Kyiv midnight ending the given "YYYY-MM-DD" day. */
+export function nextDayStart(day: string): Date {
+  const [year, month, date] = day.split("-").map(Number);
+  return new Date(new TZDate(year, month - 1, date + 1, TZ).getTime());
+}

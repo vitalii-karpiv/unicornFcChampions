@@ -2,10 +2,12 @@ import { describe, expect, test } from "vitest";
 import {
   currentMonthKey,
   dayKey,
+  dayStart,
   fromKyivLocal,
   isLockedDate,
   monthKey,
   monthStart,
+  nextDayStart,
   nextMonthStart,
   shiftMonth,
   toKyivLocal,
@@ -81,4 +83,10 @@ describe("Kyiv local datetime (datetime-local inputs)", () => {
   test("fromKyivLocal rejects garbage", () => {
     expect(Number.isNaN(fromKyivLocal("nope").getTime())).toBe(true);
   });
+});
+
+test("dayStart / nextDayStart in Kyiv, incl. the 23-hour DST day", () => {
+  expect(dayStart("2026-11-11").toISOString()).toBe("2026-11-10T22:00:00.000Z");
+  expect(nextDayStart("2026-11-11").toISOString()).toBe("2026-11-11T22:00:00.000Z");
+  expect(nextDayStart("2026-03-29").getTime() - dayStart("2026-03-29").getTime()).toBe(23 * 3_600_000);
 });
