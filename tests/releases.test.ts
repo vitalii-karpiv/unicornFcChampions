@@ -17,12 +17,13 @@ describe("releases", () => {
   test("unseenReleases", () => {
     expect(unseenReleases(null).map((r) => r.version)).toEqual(RELEASES.map((r) => r.version));
     expect(unseenReleases(LATEST_RELEASE)).toEqual([]);
-    expect(unseenReleases("1.1.0")[0].version).toBe("1.2.0");
+    expect(unseenReleases("1.1.0").map((r) => r.version)).toEqual(["1.3.0", "1.2.0"]);
+    expect(unseenReleases("1.2.0").map((r) => r.version)).toEqual(["1.3.0"]);
   });
 
   test("storyCards puts an intro before each release's cards", () => {
     const cards = storyCards([RELEASES[0]]);
-    expect(cards[0]).toMatchObject({ art: "intro", title: "Version 1.2.0 is out", version: "1.2.0" });
-    expect(cards.map((c) => c.art)).toEqual(["intro", "team-stars", "elo-odds", "giant-killing", "strength-split"]);
+    expect(cards[0]).toMatchObject({ art: "intro", title: "Version 1.3.0 is out", version: "1.3.0" });
+    expect(cards.map((c) => c.art)).toEqual(["intro", "coins", "bet-slip", "futures", "betting-rating"]);
   });
 });

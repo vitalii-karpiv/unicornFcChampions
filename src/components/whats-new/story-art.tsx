@@ -1,8 +1,9 @@
 "use client";
 
-import { Swords } from "lucide-react";
+import { Check, Coins, Swords } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Star } from "@/components/team-stars";
+import { formatOdds } from "@/lib/format";
 import type { ArtKey } from "@/lib/releases";
 import { cn } from "@/lib/utils";
 
@@ -160,6 +161,126 @@ function StrengthArt({ active }: { active: boolean }) {
   );
 }
 
+function CoinsArt({ active }: { active: boolean }) {
+  const [n, setN] = useState(0);
+  useTimeline(
+    active,
+    Array.from({ length: 10 }, (_, k): [number, () => void] => [300 + k * 70, () => setN((k + 1) * 100)]),
+  );
+  return (
+    <div className="grid justify-items-center gap-2">
+      <Coins className="wn-pop size-14 text-star" strokeWidth={1.4} />
+      <span className="font-mono text-3xl font-semibold tabular">{n.toLocaleString("en-US")}</span>
+      <span className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">starting balance</span>
+    </div>
+  );
+}
+
+const SLIP_PRICES = [
+  { label: "Max", odds: 1.7 },
+  { label: "Draw", odds: 9.5 },
+  { label: "Oleh", odds: 2.4 },
+];
+
+function BetSlipArt({ active }: { active: boolean }) {
+  const [picked, setPicked] = useState(false);
+  const [slip, setSlip] = useState(false);
+  useTimeline(active, [
+    [500, () => setPicked(true)],
+    [1100, () => setSlip(true)],
+  ]);
+  return (
+    <div className="grid w-[82%] gap-2.5">
+      <div className="text-center text-[11px] text-muted-foreground">Max vs Oleh · Winner</div>
+      <div className="grid grid-cols-3 gap-1.5">
+        {SLIP_PRICES.map((p, i) => (
+          <span
+            key={p.label}
+            className={cn(
+              "grid justify-items-center rounded-lg border bg-card py-1.5 transition-colors duration-300 motion-reduce:transition-none",
+              picked && i === 0 && "border-foreground bg-foreground text-background",
+            )}
+          >
+            <span className="text-[10px] opacity-70">{p.label}</span>
+            <span className="font-mono text-xs font-semibold">{formatOdds(p.odds)}</span>
+          </span>
+        ))}
+      </div>
+      <div
+        className={cn(
+          "flex justify-between rounded-lg border bg-card px-3 py-1.5 font-mono text-xs font-semibold transition-all duration-500 motion-reduce:transition-none",
+          slip ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0",
+        )}
+      >
+        <span>stake 100</span>
+        <span>
+          returns <span className="text-win">170</span>
+        </span>
+      </div>
+    </div>
+  );
+}
+
+const PICKS = [
+  { emoji: "👑", name: "Andrii", odds: 3.4 },
+  { emoji: "⚽", name: "Max", odds: 2.1 },
+  { emoji: "🔥", name: "Oleh", odds: 4.8 },
+];
+
+function FuturesArt({ active }: { active: boolean }) {
+  const [hit, setHit] = useState(false);
+  useTimeline(active, [[1200, () => setHit(true)]]);
+  return (
+    <div className="grid w-[78%] gap-1.5">
+      {PICKS.map((p, i) => (
+        <div
+          key={p.name}
+          className="wn-rise flex items-center gap-2 rounded-lg border bg-card px-2.5 py-1.5 text-xs"
+          style={{ animationDelay: `${150 + i * 150}ms` }}
+        >
+          <span>{p.emoji}</span>
+          <span className="flex-1 font-medium">{p.name}</span>
+          <span className="font-mono text-muted-foreground">{formatOdds(p.odds)}</span>
+          {i === 0 && (
+            <span
+              className={cn(
+                "flex items-center gap-0.5 font-mono font-semibold text-win transition-opacity duration-500 motion-reduce:transition-none",
+                hit ? "opacity-100" : "opacity-0",
+              )}
+            >
+              <Check className="size-3.5" />+{Math.round(20 * p.odds)}
+            </span>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+const RATING = [
+  { name: "Oleh", balance: 1340 },
+  { name: "Max", balance: 1115 },
+  { name: "Andrii", balance: 870 },
+];
+
+function BettingRatingArt() {
+  return (
+    <div className="grid w-[78%] gap-1.5 font-mono text-xs">
+      {RATING.map((r, i) => (
+        <div
+          key={r.name}
+          className="wn-rise flex items-center gap-2.5 rounded-lg border bg-card px-2.5 py-1.5"
+          style={{ animationDelay: `${150 + i * 150}ms` }}
+        >
+          <span className="text-muted-foreground">{i + 1}</span>
+          <span className="flex-1 font-sans font-medium">{r.name}</span>
+          <span className="font-semibold tabular">{r.balance.toLocaleString("en-US")}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /** Picture for one story card. Re-key it when its card becomes current so its animation replays. */
 export function StoryArt({ art, version, active }: { art: ArtKey; version?: string; active: boolean }) {
   switch (art) {
@@ -173,5 +294,13 @@ export function StoryArt({ art, version, active }: { art: ArtKey; version?: stri
       return <GiantKillingArt />;
     case "strength-split":
       return <StrengthArt active={active} />;
+    case "coins":
+      return <CoinsArt active={active} />;
+    case "bet-slip":
+      return <BetSlipArt active={active} />;
+    case "futures":
+      return <FuturesArt active={active} />;
+    case "betting-rating":
+      return <BettingRatingArt />;
   }
 }

@@ -2,7 +2,16 @@
  * User-facing release notes, newest first. A release only shows the "What's new" popup if it has an entry here,
  * so patch releases without user-visible changes simply don't add one. The newest entry must match package.json.
  */
-export type ArtKey = "intro" | "team-stars" | "elo-odds" | "giant-killing" | "strength-split";
+export type ArtKey =
+  | "intro"
+  | "team-stars"
+  | "elo-odds"
+  | "giant-killing"
+  | "strength-split"
+  | "coins"
+  | "bet-slip"
+  | "futures"
+  | "betting-rating";
 
 export type Card = {
   art: ArtKey;
@@ -24,6 +33,33 @@ export type Release = {
 };
 
 export const RELEASES: Release[] = [
+  {
+    version: "1.3.0",
+    date: "2026-11-12",
+    summary: "Bets are here. Back your friends (or bet against them) with fake coins.",
+    cards: [
+      {
+        art: "coins",
+        title: "1,000 coins each",
+        body: "Everyone starts with 1,000 coins to bet on the new Bets tab. On your phone, Bets takes Me's place; your profile is in the avatar menu.",
+      },
+      {
+        art: "bet-slip",
+        title: "Daily bets",
+        body: "Every day there are odds for each pair who played in the last 30 days: winner, total goals, correct score and more. You can't bet on your own matches.",
+      },
+      {
+        art: "futures",
+        title: "Monthly predictions",
+        body: "Pick next month's Player of the Month and award winners. Picks are free, and a correct one pays 20 × its odds. This is the only way to earn new coins.",
+      },
+      {
+        art: "betting-rating",
+        title: "Betting rating",
+        body: "A new table on Home, right under the Elo leaderboard, ranks everyone by balance. It also shows bets won and this month's profit.",
+      },
+    ],
+  },
   {
     version: "1.2.0",
     date: "2026-11-09",
